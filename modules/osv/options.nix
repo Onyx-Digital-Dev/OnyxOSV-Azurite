@@ -743,47 +743,128 @@ in
         };
       };
 
-      # Developer stack
+      # ═══════════════════════════════════════════════════════════════════
+      # Developer SIP (Software Intent Profile)
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # PURPOSE: "This system is ready for professional software development
+      # immediately, across common languages and workflows, without blocking
+      # on missing tools, while still encouraging project-specific dependency
+      # isolation via nix-shell."
+      #
+      # DOCTRINE: "A warrior in a garden, not a gardener in a war."
+      # Unused capability is acceptable. Over-capability is intentional.
+      #
+      # BOUNDARY: This SIP provides developer SOFTWARE ONLY.
+      # Hardware acceleration is handled by osv.hardware.gpu.*
+      # Audio/capture devices are NOT configured here.
+      #
+      # PRIMARY WORKFLOW: nix-shell / devShells for project-specific deps
+      # System languages are baseline capability, not replacement for shells.
+      #
+      # ═══════════════════════════════════════════════════════════════════
       developer = {
-        enable = mkEnableOption "OSV developer stack";
+        enable = mkEnableOption "OSV developer SIP";
 
-        editors = {
-          vscode = mkOption {
+        # ═════════════════════════════════════════════════════════════════
+        # Nix Formatter Selection
+        # ═════════════════════════════════════════════════════════════════
+        formatter = mkOption {
+          type = types.enum [ "alejandra" "nixfmt" "none" ];
+          default = "none";
+          description = ''
+            Nix code formatter to install.
+            - "alejandra": Opinionated Nix formatter
+            - "nixfmt": Official Nix formatter
+            - "none": No formatter installed (project decides)
+          '';
+        };
+
+        # ═════════════════════════════════════════════════════════════════
+        # Containers
+        # ═════════════════════════════════════════════════════════════════
+        containers = {
+          enable = mkOption {
             type = types.bool;
-            default = false;
-            description = "Install VS Code";
+            default = true;
+            description = "Enable container runtime (Docker)";
+          };
+
+          docker = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Docker and Docker Compose";
+          };
+        };
+
+        # ═════════════════════════════════════════════════════════════════
+        # Editors
+        # ═════════════════════════════════════════════════════════════════
+        editors = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable code editors";
+          };
+
+          vscodium = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable VSCodium (FOSS VS Code)";
+          };
+
+          helix = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Helix editor";
           };
 
           neovim = mkOption {
             type = types.bool;
             default = true;
-            description = "Install Neovim";
+            description = "Enable Neovim";
           };
         };
 
+        # ═════════════════════════════════════════════════════════════════
+        # Languages (Baseline Capability)
+        # ═════════════════════════════════════════════════════════════════
+        #
+        # NOTE: These are baseline system capabilities. The PRIMARY expected
+        # workflow is still nix-shell / devShells for project-specific deps.
+        # ═════════════════════════════════════════════════════════════════
         languages = {
-          rust = mkOption {
+          enable = mkOption {
             type = types.bool;
-            default = false;
-            description = "Install Rust toolchain";
+            default = true;
+            description = "Enable language toolchains";
           };
 
-          go = mkOption {
+          rust = mkOption {
             type = types.bool;
-            default = false;
-            description = "Install Go toolchain";
+            default = true;
+            description = "Enable Rust toolchain";
           };
 
           python = mkOption {
             type = types.bool;
             default = true;
-            description = "Install Python";
+            description = "Enable Python";
           };
+        };
 
-          node = mkOption {
+        # ═════════════════════════════════════════════════════════════════
+        # Core Development Tooling
+        # ═════════════════════════════════════════════════════════════════
+        #
+        # Baseline utilities for building, debugging, inspection, iteration.
+        # Conservative and broadly useful. No niche or opinionated tools.
+        # ═════════════════════════════════════════════════════════════════
+        coreTools = {
+          enable = mkOption {
             type = types.bool;
             default = true;
-            description = "Install Node.js";
+            description = "Enable core development utilities";
           };
         };
       };

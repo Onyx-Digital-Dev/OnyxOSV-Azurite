@@ -63,7 +63,7 @@
   osv.users = {
     primaryUser = "oskodiak";
     primaryUserDescription = "Kodiak";
-    extraGroups = [ "networkmanager" "wheel" "video" ];
+    extraGroups = [ "networkmanager" "wheel" "video" "docker" ];
   };
 
   # ═══════════════════════════════════════════════════════════════════
@@ -205,6 +205,39 @@
         libresprite = true;
         mtpaint = true;
       };
+    };
+
+    # Developer SIP - Professional development capability
+    # "A warrior in a garden, not a gardener in a war."
+    developer = {
+      enable = true;
+
+      # Nix formatter - conservative default
+      formatter = "alejandra";
+
+      # Containers
+      containers = {
+        enable = true;
+        docker = true;
+      };
+
+      # Editors
+      editors = {
+        enable = true;
+        vscodium = true;
+        helix = true;
+        neovim = true;
+      };
+
+      # Languages (baseline capability; devShells are primary workflow)
+      languages = {
+        enable = true;
+        rust = true;
+        python = true;
+      };
+
+      # Core development tooling
+      coreTools.enable = true;
     };
   };
 
