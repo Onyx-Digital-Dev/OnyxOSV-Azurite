@@ -122,27 +122,34 @@
       browser = "firefox";
     };
 
+    # Gaming SIP - All tiers enabled by default
+    # Explicit structure shown for documentation; all defaults are true
     gaming = {
       enable = true;
-      enableGameMode = true;
-      enableMangoHud = true;
 
-      steam = {
-        enable = true;
-        remotePlayFirewall = true;
+      # Tier 1: MUST SHIP - Launchers and streaming
+      tier1 = {
+        steam.enable = true;
+        steam.remotePlayFirewall = true;
+        heroic = true;
+        lutris = true;
+        obs = true;
+        discord = true;
       };
 
-      heroic = true;
-
-      tools = {
+      # Tier 2: DEFAULT ON - Performance tools
+      tier2 = {
+        gamemode = true;
+        mangohud = true;
         gamescope = true;
         protonup = true;
-        winetricks = true;
       };
 
-      comms = {
-        discord = true;
-        obs = true;
+      # Tier 3: OPTIONAL - Advanced tuning
+      tier3 = {
+        vkbasalt = true;
+        goverlay = true;
+        winetricks = true;
       };
     };
 

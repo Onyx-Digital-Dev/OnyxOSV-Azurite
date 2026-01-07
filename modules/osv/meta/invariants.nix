@@ -168,7 +168,7 @@ in
         "OSV: Laptop with NVIDIA PRIME but power management disabled. Battery life may suffer.")
 
       # Discord is temporary
-      (lib.optional cfg.apps.gaming.comms.discord
+      (lib.optional (cfg.apps.gaming.enable && cfg.apps.gaming.tier1.discord)
         "OSV: Discord is installed. This is a temporary bridge until Exom is ready.")
 
       # Greeter without configHome

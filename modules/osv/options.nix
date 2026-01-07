@@ -447,79 +447,123 @@ in
         };
       };
 
-      # Gaming stack
+      # ═══════════════════════════════════════════════════════════════════
+      # Gaming SIP (Software Intent Profile)
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # BOUNDARY: This SIP provides gaming SOFTWARE ONLY.
+      # GPU configuration is handled by osv.hardware.gpu.*
+      # Environment configuration is handled by osv.environment.*
+      #
+      # TIER STRUCTURE:
+      #   Tier 1 (MUST SHIP): Steam, Heroic, Lutris, OBS Studio, Discord
+      #   Tier 2 (default on): ProtonUp-Qt, MangoHud, Gamescope, GameMode
+      #   Tier 3 (optional):   vkBasalt, Goverlay
+      #
+      # ═══════════════════════════════════════════════════════════════════
       gaming = {
-        enable = mkEnableOption "OSV gaming stack";
+        enable = mkEnableOption "OSV gaming SIP";
 
+        # Integration point for GPU wrapper (NOT GPU configuration)
+        # This receives the wrapper name from osv.hardware.gpu.wrapperName
         gpuWrapper = mkOption {
           type = types.str;
           default = "osv-gpu-run";
-          description = "GPU wrapper command for games";
+          description = "GPU wrapper command for games (integration point)";
         };
 
-        enableGameMode = mkOption {
-          type = types.bool;
-          default = true;
-          description = "Enable GameMode";
-        };
+        # ═════════════════════════════════════════════════════════════════
+        # TIER 1: MUST SHIP - Core gaming launchers and streaming
+        # ═════════════════════════════════════════════════════════════════
+        tier1 = {
+          steam = {
+            enable = mkOption {
+              type = types.bool;
+              default = true;
+              description = "Enable Steam";
+            };
 
-        enableMangoHud = mkOption {
-          type = types.bool;
-          default = true;
-          description = "Enable MangoHud overlay";
-        };
-
-        steam = {
-          enable = mkOption {
-            type = types.bool;
-            default = true;
-            description = "Enable Steam";
+            remotePlayFirewall = mkOption {
+              type = types.bool;
+              default = true;
+              description = "Open firewall for Steam Remote Play";
+            };
           };
 
-          remotePlayFirewall = mkOption {
+          heroic = mkOption {
             type = types.bool;
             default = true;
-            description = "Open firewall for Steam Remote Play";
+            description = "Enable Heroic (Epic/GOG launcher)";
+          };
+
+          lutris = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Lutris (universal game launcher)";
+          };
+
+          obs = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable OBS Studio for streaming/recording";
+          };
+
+          discord = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Discord for gaming communications";
           };
         };
 
-        heroic = mkOption {
-          type = types.bool;
-          default = true;
-          description = "Enable Heroic (Epic/GOG launcher)";
-        };
-
-        tools = {
-          gamescope = mkOption {
-            type = types.bool;
-            default = true;
-            description = "Install gamescope";
-          };
-
+        # ═════════════════════════════════════════════════════════════════
+        # TIER 2: DEFAULT ON - Essential gaming tools
+        # ═════════════════════════════════════════════════════════════════
+        tier2 = {
           protonup = mkOption {
             type = types.bool;
             default = true;
-            description = "Install protonup-qt";
+            description = "Enable ProtonUp-Qt for Proton version management";
+          };
+
+          mangohud = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable MangoHud performance overlay";
+          };
+
+          gamescope = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Gamescope compositor";
+          };
+
+          gamemode = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable GameMode performance optimizer";
+          };
+        };
+
+        # ═════════════════════════════════════════════════════════════════
+        # TIER 3: OPTIONAL - Advanced tuning tools
+        # ═════════════════════════════════════════════════════════════════
+        tier3 = {
+          vkbasalt = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable vkBasalt Vulkan post-processing layer";
+          };
+
+          goverlay = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable GOverlay (MangoHud/vkBasalt configurator)";
           };
 
           winetricks = mkOption {
             type = types.bool;
             default = true;
-            description = "Install winetricks";
-          };
-        };
-
-        comms = {
-          discord = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Install Discord";
-          };
-
-          obs = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Install OBS Studio";
+            description = "Enable winetricks for Wine configuration";
           };
         };
       };
