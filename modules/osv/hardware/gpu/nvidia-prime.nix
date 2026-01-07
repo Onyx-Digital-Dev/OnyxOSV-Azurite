@@ -32,15 +32,8 @@ let
   '';
 in
 {
+  # NOTE: PRIME hybrid GPU assertion is enforced in meta/invariants.nix
   config = lib.mkIf isActive (lib.mkMerge [
-    # Assertion: PRIME requires hybrid GPU facts
-    {
-      assertions = [{
-        assertion = config.osv.facts.gpu == "hybrid";
-        message = "OSV: nvidia-prime stack requires osv.facts.gpu = \"hybrid\"";
-      }];
-    }
-
     # NVIDIA requires unfree
     {
       nixpkgs.config.allowUnfree = lib.mkDefault true;
