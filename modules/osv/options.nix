@@ -51,6 +51,30 @@ in
         default = [];
         description = "Additional core packages for this host";
       };
+
+      # Audio subsystem
+      audio = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable PipeWire audio stack";
+        };
+
+        support32Bit = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable 32-bit audio support (for games)";
+        };
+      };
+
+      # Printing subsystem
+      printing = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable CUPS printing";
+        };
+      };
     };
 
     # ═══════════════════════════════════════════════════════════════════
@@ -194,6 +218,23 @@ in
           type = types.bool;
           default = false;
           description = "Enable Blueman (tray applet)";
+        };
+      };
+
+      # VPN options
+      wireguard = {
+        enableTools = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Install WireGuard tools";
+        };
+      };
+
+      openvpn = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Install OpenVPN and NetworkManager plugin";
         };
       };
     };
@@ -459,6 +500,12 @@ in
             type = types.bool;
             default = true;
             description = "Install protonup-qt";
+          };
+
+          winetricks = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Install winetricks";
           };
         };
 

@@ -107,7 +107,8 @@ in
       environment.systemPackages = with pkgs;
         [ steam-run vulkan-tools ]
         ++ lib.optionals cfg.tools.gamescope [ gamescope ]
-        ++ lib.optionals cfg.tools.protonup [ protonup-qt ];
+        ++ lib.optionals cfg.tools.protonup [ protonup-qt ]
+        ++ lib.optionals cfg.tools.winetricks [ winetricks ];
     }
 
     # Comms

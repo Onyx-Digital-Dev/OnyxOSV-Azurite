@@ -17,10 +17,20 @@
     enable = true;
     stateVersion = "25.11";
     allowUnfree = true;
+
     secretService = {
       enable = true;
       seahorse = true;
     };
+
+    # Audio via PipeWire (modularized)
+    audio = {
+      enable = true;
+      support32Bit = true;
+    };
+
+    # Printing via CUPS (modularized)
+    printing.enable = true;
   };
 
   # ═══════════════════════════════════════════════════════════════════
@@ -127,6 +137,7 @@
       tools = {
         gamescope = true;
         protonup = true;
+        winetricks = true;
       };
 
       comms = {
@@ -162,21 +173,4 @@
   # ═══════════════════════════════════════════════════════════════════
   time.timeZone = "America/Los_Angeles";
   i18n.defaultLocale = "en_US.UTF-8";
-
-  # ═══════════════════════════════════════════════════════════════════
-  # AUDIO (PipeWire baseline)
-  # ═══════════════════════════════════════════════════════════════════
-  services.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-  };
-
-  # ═══════════════════════════════════════════════════════════════════
-  # PRINTING
-  # ═══════════════════════════════════════════════════════════════════
-  services.printing.enable = true;
 }

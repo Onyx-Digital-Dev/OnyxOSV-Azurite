@@ -7,6 +7,7 @@
 # - SSH
 # - Tailscale
 # - Bluetooth
+# - VPN (WireGuard, OpenVPN)
 { config, lib, pkgs, ... }:
 
 let
@@ -83,10 +84,14 @@ in
       services.blueman.enable = cfg.bluetooth.blueman;
     })
 
-    # Networking tools
+    # VPN tools and networking packages
     {
       environment.systemPackages = with pkgs;
-        [ wireguard-tools ]
+        # WireGuard tools
+        lib.optionals cfg.wireguard.enableTools [ wireguard-tools ]
+        # OpenVPN with NetworkManager integration
+        ++ lib.optionals cfg.openvpn.enable [ openvpn networkmanager-openvpn ]
+        # Bluetooth tools
         ++ lib.optionals cfg.bluetooth.enable [ bluez bluez-tools ];
     }
   ]);
