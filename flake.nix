@@ -62,11 +62,11 @@
           system = "x86_64-linux";
         };
 
-        # Secondary host (future)
-        # athena = mkHost {
-        #   hostName = "athena";
-        #   system = "x86_64-linux";
-        # };
+        # Secondary host - Desktop with dedicated NVIDIA
+        athena = mkHost {
+          hostName = "athena";
+          system = "x86_64-linux";
+        };
       };
 
       # Expose OSV library for external use
