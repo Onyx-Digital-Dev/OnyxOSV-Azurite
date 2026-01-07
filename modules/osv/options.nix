@@ -983,6 +983,79 @@ in
           };
         };
       };
+      # ═══════════════════════════════════════════════════════════════════
+      # Virtualization SIP (Software Intent Profile)
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # PURPOSE: "This workstation is ready to create, run, and manage
+      # local virtual machines for development testing, OS experimentation,
+      # compatibility verification, and isolated lab environments."
+      #
+      # BOUNDARY: This SIP provides VM userspace tools ONLY.
+      # It does NOT configure:
+      #   - Hardware passthrough (VFIO, GPU passthrough, IOMMU)
+      #   - Network bridges or infrastructure networking
+      #   - Kernel modules (assumes KVM is available)
+      #   - Remote hypervisor management
+      #   - Auto-starting VMs
+      #
+      # EXPLICIT EXCLUSIONS:
+      #   - Containers (belongs to Developer SIP)
+      #   - Cloud orchestration (Kubernetes, OpenStack)
+      #
+      # ═══════════════════════════════════════════════════════════════════
+      virtualization = {
+        enable = mkEnableOption "OSV virtualization SIP";
+      };
+
+      # ═══════════════════════════════════════════════════════════════════
+      # Security SIP (Software Intent Profile)
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # PURPOSE: "This workstation has tools for trust verification,
+      # secrets management, and security inspection without silently
+      # hardening the system or altering its security posture."
+      #
+      # BOUNDARY: This SIP provides security TOOLS ONLY.
+      # It does NOT configure:
+      #   - Kernel hardening (sysctl, lockdown)
+      #   - MAC frameworks (SELinux, AppArmor, TOMOYO)
+      #   - Firewall rules (iptables, nftables)
+      #   - Antivirus or EDR agents
+      #   - VPN (belongs to osv.networking.vpn)
+      #
+      # EXPLICIT EXCLUSIONS:
+      #   - Offensive security / pentesting tools
+      #   - Silent policy changes
+      #
+      # ═══════════════════════════════════════════════════════════════════
+      security = {
+        enable = mkEnableOption "OSV security SIP";
+      };
+
+      # ═══════════════════════════════════════════════════════════════════
+      # Compute SIP (Software Intent Profile)
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # PURPOSE: "This workstation enables local computational analysis,
+      # numerical modeling, and machine learning experimentation without
+      # coupling to specific accelerators, cloud services, or production
+      # infrastructure."
+      #
+      # BOUNDARY: This SIP provides compute TOOLS ONLY.
+      # It does NOT configure:
+      #   - GPU drivers (CUDA, ROCm, OpenCL)
+      #   - Accelerator detection or policy
+      #   - Cloud SDKs (AWS, GCP, Azure)
+      #   - Production ML serving infrastructure
+      #   - Automatic Jupyter server (installed but never auto-started)
+      #   - Big data infrastructure (Spark, Hadoop)
+      #   - Database servers
+      #
+      # ═══════════════════════════════════════════════════════════════════
+      compute = {
+        enable = mkEnableOption "OSV compute SIP";
+      };
     };
 
     # ═══════════════════════════════════════════════════════════════════

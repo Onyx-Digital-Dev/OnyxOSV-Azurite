@@ -63,7 +63,7 @@
   osv.users = {
     primaryUser = "oskodiak";
     primaryUserDescription = "Kodiak";
-    extraGroups = [ "networkmanager" "wheel" "video" "docker" ];
+    extraGroups = [ "networkmanager" "wheel" "video" "docker" "libvirtd" ];
   };
 
   # ═══════════════════════════════════════════════════════════════════
@@ -271,6 +271,15 @@
         ffmpeg = true;
       };
     };
+
+    # Virtualization SIP - Local VM management
+    virtualization.enable = true;
+
+    # Security SIP - Trust verification and secrets management
+    security.enable = true;
+
+    # Compute SIP - Data science and numerical computing
+    compute.enable = true;
   };
 
   # ═══════════════════════════════════════════════════════════════════
