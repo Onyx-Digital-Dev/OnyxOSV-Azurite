@@ -239,6 +239,38 @@
       # Core development tooling
       coreTools.enable = true;
     };
+
+    # Media SIP - High-quality media consumption
+    media = {
+      enable = true;
+
+      # Video playback
+      video = {
+        enable = true;
+        mpv = true;
+        vlc = true;
+      };
+
+      # Music playback
+      music = {
+        enable = true;
+        strawberry = true;
+      };
+
+      # Media clients (streaming from servers)
+      clients = {
+        enable = true;
+        jellyfin = true;
+      };
+
+      # Utilities
+      utilities = {
+        enable = true;
+        ytdlp = true;
+        mediainfo = true;
+        ffmpeg = true;
+      };
+    };
   };
 
   # ═══════════════════════════════════════════════════════════════════

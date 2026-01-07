@@ -869,26 +869,118 @@ in
         };
       };
 
-      # Media stack
+      # ═══════════════════════════════════════════════════════════════════
+      # Media SIP (Software Intent Profile)
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # PURPOSE: "This system is ready for high-quality media consumption
+      # and organization on a workstation."
+      #
+      # Media SIP is about:
+      # • watching video
+      # • listening to music
+      # • organizing media libraries
+      # • streaming from existing servers
+      #
+      # Media SIP is NOT:
+      # • content creation (see Creator SIP)
+      # • recording or capture
+      # • live streaming
+      # • media automation
+      # • self-hosted media servers
+      #
+      # BOUNDARY: This SIP provides media consumption SOFTWARE ONLY.
+      # Audio stack configuration is handled by osv.core.audio.*
+      # GPU/VAAPI configuration is handled by osv.hardware.gpu.*
+      #
+      # ═══════════════════════════════════════════════════════════════════
       media = {
-        enable = mkEnableOption "OSV media stack";
+        enable = mkEnableOption "OSV media SIP";
 
-        video = mkOption {
-          type = types.bool;
-          default = true;
-          description = "Install video players (mpv, vlc)";
+        # ═════════════════════════════════════════════════════════════════
+        # Video Playback
+        # ═════════════════════════════════════════════════════════════════
+        video = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable video playback tools";
+          };
+
+          mpv = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable mpv (keyboard-driven video player)";
+          };
+
+          vlc = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable VLC (graphical media player)";
+          };
         };
 
-        audio = mkOption {
-          type = types.bool;
-          default = true;
-          description = "Install audio players";
+        # ═════════════════════════════════════════════════════════════════
+        # Music Playback
+        # ═════════════════════════════════════════════════════════════════
+        music = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable music playback tools";
+          };
+
+          strawberry = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Strawberry (music player and organizer)";
+          };
         };
 
-        images = mkOption {
-          type = types.bool;
-          default = true;
-          description = "Install image viewers";
+        # ═════════════════════════════════════════════════════════════════
+        # Media Clients
+        # ═════════════════════════════════════════════════════════════════
+        clients = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable media streaming clients";
+          };
+
+          jellyfin = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Jellyfin Media Player (client only, no server)";
+          };
+        };
+
+        # ═════════════════════════════════════════════════════════════════
+        # Utilities
+        # ═════════════════════════════════════════════════════════════════
+        utilities = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable media utilities";
+          };
+
+          ytdlp = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable yt-dlp (video downloader)";
+          };
+
+          mediainfo = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable mediainfo (media file inspector)";
+          };
+
+          ffmpeg = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable ffmpeg (media conversion)";
+          };
         };
       };
     };
