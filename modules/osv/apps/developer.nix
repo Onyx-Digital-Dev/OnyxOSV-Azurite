@@ -1,7 +1,4 @@
 # OSV Developer SIP
-#
-# Professional development tools. Primary workflow is nix-shell/devShells.
-# Does NOT configure GPU, audio, or AI tooling.
 { config, lib, pkgs, ... }:
 
 let
@@ -13,7 +10,6 @@ let
 in
 {
   config = lib.mkIf cfg.enable (lib.mkMerge [
-    # Formatter
     (lib.mkIf (cfg.formatter == "alejandra") {
       environment.systemPackages = [ pkgs.alejandra ];
     })
@@ -21,26 +17,20 @@ in
       environment.systemPackages = [ pkgs.nixfmt-rfc-style ];
     })
 
-    # Containers
     (lib.mkIf (cnt.enable && cnt.docker) {
       virtualisation.docker.enable = true;
       environment.systemPackages = [ pkgs.docker-compose ];
     })
 
-    # Editors
     (lib.mkIf (edt.enable && edt.vscodium) {
       environment.systemPackages = [ pkgs.vscodium ];
-    })
-    (lib.mkIf (edt.enable && edt.helix) {
-      environment.systemPackages = [ pkgs.helix ];
     })
     (lib.mkIf (edt.enable && edt.neovim) {
       environment.systemPackages = [ pkgs.neovim ];
     })
 
-    # Languages (baseline capability)
     (lib.mkIf (lng.enable && lng.rust) {
-      environment.systemPackages = with pkgs; [ rustup pkg-config openssl ];
+      environment.systemPackages = with pkgs; [ rustup pkg-config ];
     })
     (lib.mkIf (lng.enable && lng.python) {
       environment.systemPackages = with pkgs; [
@@ -50,17 +40,16 @@ in
       ];
     })
 
-    # Core tooling
     (lib.mkIf core.enable {
       environment.systemPackages = with pkgs; [
-        git git-lfs
+        git-lfs
         gnumake cmake ninja meson
         gcc clang llvm binutils
-        gdb strace ltrace valgrind
-        file patchelf elfutils
-        ripgrep fd tree fzf
-        jq yq
-        curl wget httpie
+        gdb ltrace valgrind
+        patchelf elfutils
+        fzf
+        yq
+        httpie
         nix-prefetch-git nix-prefetch-github nixpkgs-review nix-tree nix-diff
       ];
       programs.nix-ld.enable = true;
@@ -70,7 +59,6 @@ in
       };
     })
 
-    # Common
     {
       environment.systemPackages = with pkgs; [ man-pages man-pages-posix ];
       documentation = {

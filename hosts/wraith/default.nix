@@ -218,11 +218,9 @@
         docker = true;
       };
 
-      # Editors
       editors = {
         enable = true;
         vscodium = true;
-        helix = true;
         neovim = true;
       };
 

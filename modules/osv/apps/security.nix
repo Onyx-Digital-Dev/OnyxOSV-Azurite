@@ -1,8 +1,4 @@
 # OSV Security SIP
-#
-# Trust verification, secrets management, and security inspection tools.
-# Does NOT configure kernel hardening, MAC frameworks, or firewall rules.
-# Excludes: offensive/pentesting tools, background scanning agents.
 { config, lib, pkgs, ... }:
 
 let
@@ -11,7 +7,7 @@ in
 {
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      # Password management (required)
+      # Password management
       bitwarden-desktop
       bitwarden-cli
 
@@ -19,17 +15,15 @@ in
       pass
       pass-otp
 
-      # Encryption
-      gnupg
+      # Encryption (beyond CORE gnupg/openssl)
       age
       minisign
       signify
 
-      # SSH
+      # SSH audit
       ssh-audit
 
       # Certificates
-      openssl
       certbot
       step-cli
 
@@ -38,7 +32,7 @@ in
       rhash
       b3sum
 
-      # YubiKey/hardware tokens (userspace)
+      # YubiKey/hardware tokens
       yubikey-manager
       yubikey-personalization
       yubico-piv-tool
@@ -46,7 +40,6 @@ in
       ccid
     ];
 
-    # pcscd required for YubiKey/smart card CCID communication
     services.pcscd.enable = true;
   };
 }

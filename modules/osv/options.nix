@@ -797,9 +797,6 @@ in
           };
         };
 
-        # ═════════════════════════════════════════════════════════════════
-        # Editors
-        # ═════════════════════════════════════════════════════════════════
         editors = {
           enable = mkOption {
             type = types.bool;
@@ -811,12 +808,6 @@ in
             type = types.bool;
             default = true;
             description = "Enable VSCodium (FOSS VS Code)";
-          };
-
-          helix = mkOption {
-            type = types.bool;
-            default = true;
-            description = "Enable Helix editor";
           };
 
           neovim = mkOption {
