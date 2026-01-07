@@ -13,7 +13,7 @@ in
 
       # Password store
       pass
-      pass-otp
+      passExtensions.pass-otp
 
       # Encryption (beyond CORE gnupg/openssl)
       age
