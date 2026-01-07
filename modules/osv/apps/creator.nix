@@ -39,7 +39,7 @@ in
 
     # Video
     (lib.mkIf (vid.enable && vid.kdenlive) {
-      environment.systemPackages = [ pkgs.kdenlive ];
+      environment.systemPackages = [ pkgs.kdePackages.kdenlive ];
     })
 
     # Audio
