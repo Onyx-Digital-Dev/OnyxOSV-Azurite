@@ -117,10 +117,7 @@
   # APPS
   # ═══════════════════════════════════════════════════════════════════
   osv.apps = {
-    userapps = {
-      enable = true;
-      browser = "firefox";
-    };
+    userapps.enable = true;
 
     # Gaming SIP - All tiers enabled by default
     # Explicit structure shown for documentation; all defaults are true

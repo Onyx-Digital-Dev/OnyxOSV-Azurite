@@ -441,8 +441,8 @@ in
         };
 
         browser = mkOption {
-          type = types.enum [ "firefox" "chromium" "none" ];
-          default = "firefox";
+          type = types.enum [ "brave" "firefox" "chromium" "none" ];
+          default = "brave";
           description = "Default web browser";
         };
       };
