@@ -568,26 +568,178 @@ in
         };
       };
 
-      # Creator stack
+      # ═══════════════════════════════════════════════════════════════════
+      # Creator SIP (Software Intent Profile)
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # PURPOSE: "This system is ready for content creation workflows
+      # across graphics, digital art, 3D modeling, video editing, audio
+      # editing, and pipeline tooling without needing to discover missing
+      # tools mid-project."
+      #
+      # BOUNDARY: This SIP provides creator SOFTWARE ONLY.
+      # Audio stack configuration is handled by osv.core.audio.*
+      # GPU configuration is handled by osv.hardware.gpu.*
+      #
+      # Over-capability is intentional. Creator SIP is not minimalism.
+      #
+      # ═══════════════════════════════════════════════════════════════════
       creator = {
-        enable = mkEnableOption "OSV creator stack";
+        enable = mkEnableOption "OSV creator SIP";
 
-        graphics = mkOption {
-          type = types.bool;
-          default = true;
-          description = "Install graphics tools (Krita, GIMP, Inkscape, Blender)";
+        # ═════════════════════════════════════════════════════════════════
+        # Graphics & Digital Art
+        # ═════════════════════════════════════════════════════════════════
+        graphics = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable graphics tools (GIMP, Inkscape, Krita)";
+          };
+
+          gimp = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable GIMP (raster graphics editor)";
+          };
+
+          inkscape = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Inkscape (vector graphics editor)";
+          };
+
+          krita = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Krita (digital painting)";
+          };
         };
 
-        video = mkOption {
-          type = types.bool;
-          default = false;
-          description = "Install video tools (Kdenlive, Shotcut)";
+        # ═════════════════════════════════════════════════════════════════
+        # 3D Modeling & Animation
+        # ═════════════════════════════════════════════════════════════════
+        modeling = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable 3D modeling tools";
+          };
+
+          blender = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Blender (3D modeling/animation)";
+          };
         };
 
-        audio = mkOption {
-          type = types.bool;
-          default = false;
-          description = "Install audio tools (Ardour, Audacity)";
+        # ═════════════════════════════════════════════════════════════════
+        # Photography & RAW Workflow
+        # ═════════════════════════════════════════════════════════════════
+        photo = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable photography tools";
+          };
+
+          darktable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable darktable (photo RAW workflow)";
+          };
+        };
+
+        # ═════════════════════════════════════════════════════════════════
+        # Video Editing
+        # ═════════════════════════════════════════════════════════════════
+        video = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable video editing tools";
+          };
+
+          kdenlive = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Kdenlive (video editing)";
+          };
+        };
+
+        # ═════════════════════════════════════════════════════════════════
+        # Audio Production
+        # ═════════════════════════════════════════════════════════════════
+        audio = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable audio production tools";
+          };
+
+          audacity = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Audacity (audio editing)";
+          };
+
+          ardour = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable Ardour (digital audio workstation)";
+          };
+        };
+
+        # ═════════════════════════════════════════════════════════════════
+        # Pipeline Tools
+        # ═════════════════════════════════════════════════════════════════
+        pipeline = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable pipeline/conversion tools";
+          };
+
+          ffmpeg = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable ffmpeg (media conversion)";
+          };
+
+          imagemagick = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable ImageMagick (image processing)";
+          };
+
+          exiftool = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable exiftool (metadata editing)";
+          };
+        };
+
+        # ═════════════════════════════════════════════════════════════════
+        # Pixel Art (for Cricket and Bean)
+        # ═════════════════════════════════════════════════════════════════
+        pixelart = {
+          enable = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable pixel art tools";
+          };
+
+          libresprite = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable LibreSprite (pixel art & sprite editor)";
+          };
+
+          mtpaint = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Enable mtPaint (lightweight pixel editor)";
+          };
         };
       };
 

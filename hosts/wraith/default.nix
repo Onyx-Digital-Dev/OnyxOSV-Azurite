@@ -153,11 +153,58 @@
       };
     };
 
+    # Creator SIP - Full content creation stack
+    # Over-capability is intentional; all categories default true
     creator = {
       enable = true;
-      graphics = true;
-      video = false;
-      audio = false;
+
+      # Graphics & Digital Art
+      graphics = {
+        enable = true;
+        gimp = true;
+        inkscape = true;
+        krita = true;
+      };
+
+      # 3D Modeling
+      modeling = {
+        enable = true;
+        blender = true;
+      };
+
+      # Photography
+      photo = {
+        enable = true;
+        darktable = true;
+      };
+
+      # Video Editing
+      video = {
+        enable = true;
+        kdenlive = true;
+      };
+
+      # Audio Production
+      audio = {
+        enable = true;
+        audacity = true;
+        ardour = true;
+      };
+
+      # Pipeline Tools
+      pipeline = {
+        enable = true;
+        ffmpeg = true;
+        imagemagick = true;
+        exiftool = true;
+      };
+
+      # Pixel Art (for Cricket and Bean)
+      pixelart = {
+        enable = true;
+        libresprite = true;
+        mtpaint = true;
+      };
     };
   };
 
