@@ -98,10 +98,7 @@
   # APPS
   # ═══════════════════════════════════════════════════════════════════
   osv.apps = {
-    userapps = {
-      enable = true;
-      browser = "firefox";
-    };
+    userapps.enable = true;
 
     # Enable as needed:
     # gaming.enable = true;
