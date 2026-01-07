@@ -63,10 +63,11 @@
         };
 
         # Secondary host - Desktop with dedicated NVIDIA
-        athena = mkHost {
-          hostName = "athena";
-          system = "x86_64-linux";
-        };
+        # DISABLED: Needs hardware-configuration.nix before enabling
+        # athena = mkHost {
+        #   hostName = "athena";
+        #   system = "x86_64-linux";
+        # };
       };
 
       # Expose OSV library for external use
