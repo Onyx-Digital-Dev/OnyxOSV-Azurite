@@ -111,10 +111,10 @@ let
     echo "  Provider: ${primeCfg.provider}"
     echo ""
     echo "Default GPU (Intel):"
-    ${pkgs.glxinfo}/bin/glxinfo 2>/dev/null | grep "OpenGL renderer" || echo "  glxinfo failed"
+    ${pkgs.mesa-demos}/bin/glxinfo 2>/dev/null | grep "OpenGL renderer" || echo "  glxinfo failed"
     echo ""
     echo "PRIME Offload GPU (NVIDIA):"
-    __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia ${pkgs.glxinfo}/bin/glxinfo 2>/dev/null | grep "OpenGL renderer" || echo "  PRIME offload failed"
+    __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia ${pkgs.mesa-demos}/bin/glxinfo 2>/dev/null | grep "OpenGL renderer" || echo "  PRIME offload failed"
     echo ""
     echo "═══════════════════════════════════════════════════════════════"
   '';
@@ -186,7 +186,7 @@ in
       environment.systemPackages = [
         osvGpuRunPrime  # Primary GPU offload wrapper
         osvGpuDiag      # Diagnostic tool
-        pkgs.glxinfo    # For GPU verification
+        pkgs.mesa-demos # For GPU verification (glxinfo)
       ];
     }
   ]);
