@@ -69,11 +69,10 @@
         };
 
         # Dell Latitude 5400 - Intel integrated laptop (William)
-        # DISABLED: Needs hardware-configuration.nix before enabling
-        # warthog = mkHost {
-        #   hostName = "warthog";
-        #   system = "x86_64-linux";
-        # };
+        warthog = mkHost {
+          hostName = "warthog";
+          system = "x86_64-linux";
+        };
 
         # Dell R740XD Server Workstation - Dual Xeon, RTX 5000
         # DISABLED: Needs hardware-configuration.nix before enabling
