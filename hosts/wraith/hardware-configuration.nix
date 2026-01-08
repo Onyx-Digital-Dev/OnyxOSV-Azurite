@@ -10,25 +10,25 @@
   ];
 
   # Boot modules
-  boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "uas" "sd_mod" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [];
 
-  # Filesystems
+  # Filesystems (P15 ThinkPad dual NVMe layout)
   fileSystems."/" = {
-    device = "/dev/disk/by-uuid/8c6d78e4-c406-452e-86b9-6078bc3d02cb";
+    device = "/dev/disk/by-uuid/d31de144-5886-4bbe-8ab9-994e7c0558cb";
     fsType = "ext4";
   };
 
   fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/20F8-4A33";
+    device = "/dev/disk/by-uuid/4AC0-4760";
     fsType = "vfat";
     options = [ "fmask=0077" "dmask=0077" ];
   };
 
   fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/c5af9f69-0b19-47f9-a8ec-229242c6f6f1";
+    device = "/dev/disk/by-uuid/399eb6db-df7f-407b-8c98-6ef0956a05b7";
     fsType = "ext4";
   };
 
