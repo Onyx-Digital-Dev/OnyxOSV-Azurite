@@ -1,15 +1,12 @@
 # Athena Host Configuration
 #
-# Secondary OSV host - Desktop workstation with dedicated NVIDIA GPU.
-# This is a THIN config - all behavior comes from OSV modules.
-#
-# NOTE: This is a placeholder configuration.
-# Update hardware-configuration.nix and settings before deploying.
+# ThinkPad T580 - Intel integrated graphics laptop
+# Lightweight workstation for ospeach
 { config, lib, pkgs, ... }:
 
 {
   imports = [
-    # Uncomment after generating hardware-configuration.nix:
+    # Uncomment after copying hardware-configuration.nix from target:
     # ./hardware-configuration.nix
     ./facts.nix
   ];
@@ -26,7 +23,7 @@
 
     audio = {
       enable = true;
-      support32Bit = true;
+      support32Bit = false;  # Intel-only, no 32-bit needed
     };
 
     printing.enable = true;
@@ -39,7 +36,10 @@
     enable = true;
     hostName = "athena";
 
-    networkManager.enable = true;
+    networkManager = {
+      enable = true;
+      wifiPowersave = true;  # Laptop - save power
+    };
 
     ssh = {
       enable = true;
@@ -53,23 +53,17 @@
   # USERS
   # ═══════════════════════════════════════════════════════════════════
   osv.users = {
-    primaryUser = "user";  # UPDATE THIS
-    primaryUserDescription = "User";  # UPDATE THIS
+    primaryUser = "ospeach";
+    primaryUserDescription = "Peach";
     extraGroups = [ "networkmanager" "wheel" "video" ];
   };
 
   # ═══════════════════════════════════════════════════════════════════
-  # HARDWARE - GPU (NVIDIA dedicated)
+  # HARDWARE - GPU (Intel integrated)
   # ═══════════════════════════════════════════════════════════════════
   osv.hardware.gpu = {
-    stack = "nvidia";  # Dedicated NVIDIA (not PRIME)
-    enable32Bit = true;
-
-    nvidia = {
-      enableSettings = true;
-      openKernel = false;
-      powerManagement = false;
-    };
+    stack = "intel";
+    enable32Bit = false;
   };
 
   # ═══════════════════════════════════════════════════════════════════
@@ -85,8 +79,7 @@
 
       greeter = {
         enable = true;
-        # UPDATE configHome to match primary user
-        # configHome = "/home/user";
+        configHome = "/home/ospeach";
         logs.save = true;
       };
     };
@@ -99,12 +92,10 @@
   # ═══════════════════════════════════════════════════════════════════
   osv.apps = {
     userapps.enable = true;
-
-    # Enable as needed:
-    # gaming.enable = true;
-    # creator.enable = true;
-    # developer.enable = true;
-    # media.enable = true;
+    media.enable = true;
+    # gaming.enable = false;  # Intel iGPU - limited gaming
+    # creator.enable = false;
+    # developer.enable = false;
   };
 
   # ═══════════════════════════════════════════════════════════════════
@@ -124,6 +115,6 @@
   # ═══════════════════════════════════════════════════════════════════
   # LOCALE (host-specific)
   # ═══════════════════════════════════════════════════════════════════
-  time.timeZone = "UTC";  # UPDATE THIS
+  time.timeZone = "America/Los_Angeles";
   i18n.defaultLocale = "en_US.UTF-8";
 }

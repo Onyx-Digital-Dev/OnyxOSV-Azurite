@@ -1,29 +1,23 @@
 # Athena Host Facts
 #
-# STATIC hardware facts for Athena.
-# Derived from hardware inspection, not runtime probing.
-#
-# This file is DATA ONLY - no logic.
-#
-# NOTE: Update these values to match actual Athena hardware
-# before deploying. These are placeholder values.
+# ThinkPad T580 - Intel integrated graphics laptop
 { ... }:
 
 {
   osv.facts = {
-    # Desktop with dedicated NVIDIA GPU
-    gpu = "nvidia";
+    # Intel integrated graphics only
+    gpu = "intel";
 
-    # No built-in display (desktop)
-    hasInternalDisplay = false;
+    # Laptop with built-in display
+    hasInternalDisplay = true;
 
-    # Not a laptop
-    isLaptop = false;
+    # Is a laptop
+    isLaptop = true;
 
-    # Has Bluetooth hardware
+    # Has Bluetooth
     hasBluetooth = true;
 
-    # Ethernet only (desktop)
-    primaryNetwork = "ethernet";
+    # WiFi and ethernet
+    primaryNetwork = "both";
   };
 }
