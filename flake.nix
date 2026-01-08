@@ -63,11 +63,10 @@
         };
 
         # ThinkPad T580 - Intel integrated laptop
-        # DISABLED: Needs hardware-configuration.nix before enabling
-        # athena = mkHost {
-        #   hostName = "athena";
-        #   system = "x86_64-linux";
-        # };
+        athena = mkHost {
+          hostName = "athena";
+          system = "x86_64-linux";
+        };
 
         # Dell R740XD Server Workstation - Dual Xeon, RTX 5000
         # DISABLED: Needs hardware-configuration.nix before enabling
