@@ -177,6 +177,9 @@ in
     {
       # Required for NVIDIA modesetting under Wayland
       boot.kernelParams = [ "nvidia-drm.modeset=1" ];
+
+      # Blacklist nouveau to prevent conflicts with proprietary driver
+      boot.blacklistedKernelModules = [ "nouveau" ];
     }
 
     # ═══════════════════════════════════════════════════════════════════
