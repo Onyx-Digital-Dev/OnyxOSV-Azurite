@@ -291,6 +291,11 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # P15 ThinkPad workarounds
+  boot.blacklistedKernelModules = [ "ucsi_ccg" ];
+  boot.kernelParams = [ "video=HDMI-A-3:d" "drm.debug=0" ];
+  boot.consoleLogLevel = 3;
+
   # ═══════════════════════════════════════════════════════════════════
   # LOCALE (host-specific)
   # ═══════════════════════════════════════════════════════════════════

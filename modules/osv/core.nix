@@ -21,6 +21,7 @@ in
     {
       services.dbus.enable = lib.mkDefault true;
       programs.dconf.enable = lib.mkDefault true;
+      services.fwupd.enable = lib.mkDefault true;
     }
 
     (lib.mkIf cfg.secretService.enable {
@@ -80,6 +81,7 @@ in
         pciutils
         usbutils
         dmidecode
+        lshw
 
         # Network diagnostics
         iproute2
