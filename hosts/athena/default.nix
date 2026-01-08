@@ -23,7 +23,7 @@
 
     audio = {
       enable = true;
-      support32Bit = false;  # Intel-only, no 32-bit needed
+      support32Bit = true;  # Required for Steam
     };
 
     printing.enable = true;
@@ -63,7 +63,7 @@
   # ═══════════════════════════════════════════════════════════════════
   osv.hardware.gpu = {
     stack = "intel";
-    enable32Bit = false;
+    enable32Bit = true;  # Required for Steam/Proton
   };
 
   # ═══════════════════════════════════════════════════════════════════
@@ -92,10 +92,9 @@
   # ═══════════════════════════════════════════════════════════════════
   osv.apps = {
     userapps.enable = true;
+    gaming.enable = true;   # Intel iGPU - casual/older titles
+    creator.enable = true;
     media.enable = true;
-    # gaming.enable = false;  # Intel iGPU - limited gaming
-    # creator.enable = false;
-    # developer.enable = false;
   };
 
   # ═══════════════════════════════════════════════════════════════════
