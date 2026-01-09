@@ -21,6 +21,10 @@ in
       # ═══════════════════════════════════════════════════════════════════
       [ pkgs.bitwarden-desktop ]
       [ pkgs.bitwarden-cli ]
+      [ pkgs.libreoffice-fresh ]
+      [ pkgs.spotify ]
+      [ pkgs.ani-cli ]
+      [ pkgs.cmatrix ]
     ];
   };
 }

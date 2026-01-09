@@ -113,9 +113,6 @@
   # HOST-SPECIFIC PACKAGES (Scott)
   # ═══════════════════════════════════════════════════════════════════
   environment.systemPackages = with pkgs; [
-    spotify
-    libreoffice-fresh
-    ani-cli
     godot_4
   ];
 
