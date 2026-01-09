@@ -1,4 +1,7 @@
 # OSV User Apps Module
+#
+# Common user applications included on all OSV systems.
+# Add applications here in the form: [ pkgs.packagename ]
 { config, lib, pkgs, ... }:
 
 let
@@ -11,6 +14,13 @@ in
     environment.systemPackages = lib.mkMerge [
       (lib.mkIf (cfg.browser == "brave") [ pkgs.brave ])
       (lib.mkIf (cfg.browser == "chromium") [ pkgs.chromium ])
+
+      # ═══════════════════════════════════════════════════════════════════
+      # USER APPLICATIONS
+      # Add packages here: [ pkgs.packagename ]
+      # ═══════════════════════════════════════════════════════════════════
+      [ pkgs.bitwarden-desktop ]
+      [ pkgs.bitwarden-cli ]
     ];
   };
 }
