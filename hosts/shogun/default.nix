@@ -106,6 +106,7 @@
       tier1.steam.remotePlayFirewall = true;
     };
     creator.enable = true;
+    developer.enable = true;
     media.enable = true;
   };
 
