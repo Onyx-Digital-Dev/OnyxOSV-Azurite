@@ -36,6 +36,7 @@ in
         enable = true;
         wifi.powersave = cfg.networkManager.wifiPowersave;
         dns = if cfg.networkManager.dns == "none" then "none" else "systemd-resolved";
+        plugins = lib.optionals cfg.openvpn.enable [ pkgs.networkmanager-openvpn ];
       };
     })
 
