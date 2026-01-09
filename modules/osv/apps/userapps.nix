@@ -11,12 +11,6 @@ in
     environment.systemPackages = lib.mkMerge [
       (lib.mkIf (cfg.browser == "brave") [ pkgs.brave ])
       (lib.mkIf (cfg.browser == "chromium") [ pkgs.chromium ])
-
-      # User Added Applications
-      [ pkgs.spotify ]
-      [ pkgs.libreoffice-fresh ]
-      [ pkgs.ani-cli ]
-      [ pkgs.godot_4 ]
     ];
   };
 }
