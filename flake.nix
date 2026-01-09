@@ -74,6 +74,13 @@
           system = "x86_64-linux";
         };
 
+        # ThinkPad T580 - Intel integrated laptop (Scott)
+        # DISABLED: Needs hardware-configuration.nix before enabling
+        # shogun = mkHost {
+        #   hostName = "shogun";
+        #   system = "x86_64-linux";
+        # };
+
         # Dell R740XD Server Workstation - Dual Xeon, RTX 5000
         # DISABLED: Needs hardware-configuration.nix before enabling
         # belial = mkHost {
