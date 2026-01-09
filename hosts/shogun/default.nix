@@ -6,8 +6,7 @@
 
 {
   imports = [
-    # Uncomment after copying hardware-configuration.nix from target:
-    # ./hardware-configuration.nix
+    ./hardware-configuration.nix
     ./facts.nix
   ];
 
