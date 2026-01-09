@@ -21,17 +21,15 @@ in
         intel-media-driver    # VAAPI for newer Intel (Broadwell+)
         intel-vaapi-driver    # VAAPI for older Intel
         vpl-gpu-rt            # QSV
-        vulkan-loader
         intel-compute-runtime # OpenCL
       ];
       extraPackages32 = lib.mkIf cfg.enable32Bit (with pkgs.driversi686Linux; [
         intel-media-driver
         intel-vaapi-driver
-        vulkan-loader
       ]);
     };
 
-    # Vulkan ICD
+    # Vulkan tools for diagnostics
     environment.systemPackages = [ pkgs.vulkan-tools ];
   };
 }
