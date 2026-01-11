@@ -1,0 +1,1036 @@
+#!/usr/bin/env bash
+# ═══════════════════════════════════════════════════════════════════════════════
+# ONYX OSV v0.2 - Azurite Bootstrap Installer
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Complete NixOS installation from ISO to fully configured OSV system.
+# Run from the NixOS installer live environment.
+#
+# Usage: curl -L https://raw.githubusercontent.com/Onyx-Digital-Dev/OnyxOSV-Azurite/main/osv-bootstrap | bash
+#    or: ./osv-bootstrap
+#
+set -euo pipefail
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════════
+OSV_REPO="https://github.com/Onyx-Digital-Dev/OnyxOSV-Azurite.git"
+OSV_BRANCH="main"
+MOUNT_POINT="/mnt"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+NC='\033[0m'
+BOLD='\033[1m'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LOGGING FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+banner() {
+    clear
+    echo -e "${MAGENTA}"
+    echo "╔═══════════════════════════════════════════════════════════════════════════════╗"
+    echo "║                                                                               ║"
+    echo "║   ██████╗ ███╗   ██╗██╗   ██╗██╗  ██╗     ██████╗ ███████╗██╗   ██╗          ║"
+    echo "║  ██╔═══██╗████╗  ██║╚██╗ ██╔╝╚██╗██╔╝    ██╔═══██╗██╔════╝██║   ██║          ║"
+    echo "║  ██║   ██║██╔██╗ ██║ ╚████╔╝  ╚███╔╝     ██║   ██║███████╗██║   ██║          ║"
+    echo "║  ██║   ██║██║╚██╗██║  ╚██╔╝   ██╔██╗     ██║   ██║╚════██║╚██╗ ██╔╝          ║"
+    echo "║  ╚██████╔╝██║ ╚████║   ██║   ██╔╝ ██╗    ╚██████╔╝███████║ ╚████╔╝           ║"
+    echo "║   ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝     ╚═════╝ ╚══════╝  ╚═══╝            ║"
+    echo "║                                                                               ║"
+    echo "║                    v0.2 Azurite - Bootstrap Installer                         ║"
+    echo "║                                                                               ║"
+    echo "║           Complete NixOS Installation from ISO to OSV System                  ║"
+    echo "║                                                                               ║"
+    echo "╚═══════════════════════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+}
+
+info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+success() { echo -e "${GREEN}[OK]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+error() { echo -e "${RED}[ERROR]${NC} $1"; }
+prompt() { echo -e "${BOLD}$1${NC}"; }
+step() { echo -e "\n${CYAN}━━━ $1 ━━━${NC}\n"; }
+
+confirm() {
+    local prompt="$1"
+    local response
+    echo -en "${YELLOW}$prompt [y/N]: ${NC}"
+    read -r response
+    [[ "$response" =~ ^[Yy]$ ]]
+}
+
+confirm_yes() {
+    local prompt="$1"
+    local response
+    echo -en "${YELLOW}$prompt [Y/n]: ${NC}"
+    read -r response
+    [[ ! "$response" =~ ^[Nn]$ ]]
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PREREQUISITE CHECKS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        error "This script must be run as root"
+        echo "  Try: sudo ./osv-bootstrap"
+        exit 1
+    fi
+}
+
+check_uefi() {
+    if [[ ! -d /sys/firmware/efi ]]; then
+        error "UEFI boot required. Please boot in UEFI mode."
+        exit 1
+    fi
+    success "UEFI boot detected"
+}
+
+check_network() {
+    info "Checking network connectivity..."
+    if ! ping -c 1 -W 3 github.com &> /dev/null; then
+        error "No network connection"
+        echo ""
+        echo "  Connect via WiFi:"
+        echo "    nmtui"
+        echo "  Or via ethernet - should auto-connect"
+        echo ""
+        exit 1
+    fi
+    success "Network connected"
+}
+
+check_installer_env() {
+    info "Detecting environment..."
+    if [[ -f /etc/NIXOS_LUSTRATE ]] || [[ "$(cat /etc/hostname 2>/dev/null)" == "nixos" ]]; then
+        success "NixOS installer environment detected"
+    else
+        warn "Not running from NixOS installer - proceeding anyway"
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DISK SELECTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+list_disks() {
+    echo ""
+    prompt "Available disks:"
+    echo ""
+    lsblk -d -o NAME,SIZE,MODEL,TYPE | grep -E "disk$" | while read -r line; do
+        local name=$(echo "$line" | awk '{print $1}')
+        echo "  /dev/$line"
+    done
+    echo ""
+}
+
+select_disk() {
+    list_disks
+
+    while true; do
+        echo -en "${CYAN}Enter target disk (e.g., sda, nvme0n1): ${NC}"
+        read -r disk_input
+
+        # Normalize input
+        disk_input="${disk_input#/dev/}"
+        TARGET_DISK="/dev/$disk_input"
+
+        if [[ -b "$TARGET_DISK" ]]; then
+            local disk_size=$(lsblk -dn -o SIZE "$TARGET_DISK" 2>/dev/null)
+            local disk_model=$(lsblk -dn -o MODEL "$TARGET_DISK" 2>/dev/null)
+            echo ""
+            warn "Selected disk: $TARGET_DISK ($disk_size) $disk_model"
+            warn "ALL DATA ON THIS DISK WILL BE ERASED!"
+            echo ""
+            if confirm "Are you absolutely sure?"; then
+                break
+            fi
+        else
+            error "Disk not found: $TARGET_DISK"
+        fi
+    done
+
+    # Determine partition naming scheme
+    if [[ "$TARGET_DISK" == *"nvme"* ]] || [[ "$TARGET_DISK" == *"mmcblk"* ]]; then
+        PART_PREFIX="${TARGET_DISK}p"
+    else
+        PART_PREFIX="${TARGET_DISK}"
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARTITION SCHEME SELECTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+select_partition_scheme() {
+    echo ""
+    prompt "Partition Scheme:"
+    echo ""
+    echo "  1) Standard   - 512MB EFI, rest for root (ext4)"
+    echo "  2) With Swap  - 512MB EFI, 8GB swap, rest for root (ext4)"
+    echo "  3) BTRFS      - 512MB EFI, rest for root (btrfs with subvolumes)"
+    echo "  4) Custom     - Enter sizes manually"
+    echo ""
+
+    while true; do
+        echo -en "${CYAN}Select scheme [1-4]: ${NC}"
+        read -r scheme_choice
+        case "$scheme_choice" in
+            1) SCHEME="standard"; break ;;
+            2) SCHEME="swap"; break ;;
+            3) SCHEME="btrfs"; break ;;
+            4) SCHEME="custom"; break ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+
+    if [[ "$SCHEME" == "custom" ]]; then
+        collect_custom_partitions
+    elif [[ "$SCHEME" == "swap" ]]; then
+        echo -en "${CYAN}Swap size in GB [8]: ${NC}"
+        read -r swap_input
+        SWAP_SIZE="${swap_input:-8}"
+    fi
+}
+
+collect_custom_partitions() {
+    echo ""
+    echo -en "${CYAN}EFI partition size in MB [512]: ${NC}"
+    read -r efi_input
+    EFI_SIZE="${efi_input:-512}"
+
+    echo -en "${CYAN}Swap size in GB (0 for none) [0]: ${NC}"
+    read -r swap_input
+    SWAP_SIZE="${swap_input:-0}"
+
+    echo ""
+    prompt "Filesystem for root:"
+    echo "  1) ext4  - Traditional, stable"
+    echo "  2) btrfs - Modern, snapshots, compression"
+    echo ""
+    while true; do
+        echo -en "${CYAN}Select filesystem [1-2]: ${NC}"
+        read -r fs_choice
+        case "$fs_choice" in
+            1) ROOT_FS="ext4"; break ;;
+            2) ROOT_FS="btrfs"; break ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARTITIONING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+partition_disk() {
+    step "Partitioning disk: $TARGET_DISK"
+
+    # Unmount any existing partitions
+    info "Unmounting any existing partitions..."
+    umount -R "$MOUNT_POINT" 2>/dev/null || true
+    for part in "${PART_PREFIX}"*; do
+        [[ -b "$part" ]] && umount "$part" 2>/dev/null || true
+    done
+    swapoff -a 2>/dev/null || true
+
+    # Wipe disk
+    info "Wiping partition table..."
+    wipefs -af "$TARGET_DISK"
+    sgdisk -Z "$TARGET_DISK"
+
+    case "$SCHEME" in
+        standard)
+            info "Creating standard layout (EFI + root)..."
+            parted -s "$TARGET_DISK" -- mklabel gpt
+            parted -s "$TARGET_DISK" -- mkpart ESP fat32 1MiB 512MiB
+            parted -s "$TARGET_DISK" -- set 1 esp on
+            parted -s "$TARGET_DISK" -- mkpart primary ext4 512MiB 100%
+
+            EFI_PART="${PART_PREFIX}1"
+            ROOT_PART="${PART_PREFIX}2"
+            SWAP_PART=""
+            ROOT_FS="ext4"
+            ;;
+
+        swap)
+            info "Creating layout with swap (EFI + swap + root)..."
+            local swap_end=$((512 + SWAP_SIZE * 1024))
+
+            parted -s "$TARGET_DISK" -- mklabel gpt
+            parted -s "$TARGET_DISK" -- mkpart ESP fat32 1MiB 512MiB
+            parted -s "$TARGET_DISK" -- set 1 esp on
+            parted -s "$TARGET_DISK" -- mkpart primary linux-swap 512MiB "${swap_end}MiB"
+            parted -s "$TARGET_DISK" -- mkpart primary ext4 "${swap_end}MiB" 100%
+
+            EFI_PART="${PART_PREFIX}1"
+            SWAP_PART="${PART_PREFIX}2"
+            ROOT_PART="${PART_PREFIX}3"
+            ROOT_FS="ext4"
+            ;;
+
+        btrfs)
+            info "Creating BTRFS layout (EFI + btrfs root)..."
+            parted -s "$TARGET_DISK" -- mklabel gpt
+            parted -s "$TARGET_DISK" -- mkpart ESP fat32 1MiB 512MiB
+            parted -s "$TARGET_DISK" -- set 1 esp on
+            parted -s "$TARGET_DISK" -- mkpart primary btrfs 512MiB 100%
+
+            EFI_PART="${PART_PREFIX}1"
+            ROOT_PART="${PART_PREFIX}2"
+            SWAP_PART=""
+            ROOT_FS="btrfs"
+            ;;
+
+        custom)
+            info "Creating custom layout..."
+            local efi_end="${EFI_SIZE}MiB"
+            local current_end="$EFI_SIZE"
+
+            parted -s "$TARGET_DISK" -- mklabel gpt
+            parted -s "$TARGET_DISK" -- mkpart ESP fat32 1MiB "$efi_end"
+            parted -s "$TARGET_DISK" -- set 1 esp on
+
+            EFI_PART="${PART_PREFIX}1"
+
+            if [[ "$SWAP_SIZE" -gt 0 ]]; then
+                local swap_start="${current_end}MiB"
+                current_end=$((current_end + SWAP_SIZE * 1024))
+                local swap_end="${current_end}MiB"
+                parted -s "$TARGET_DISK" -- mkpart primary linux-swap "$swap_start" "$swap_end"
+                SWAP_PART="${PART_PREFIX}2"
+                ROOT_PART="${PART_PREFIX}3"
+            else
+                SWAP_PART=""
+                ROOT_PART="${PART_PREFIX}2"
+            fi
+
+            parted -s "$TARGET_DISK" -- mkpart primary "${current_end}MiB" 100%
+            ;;
+    esac
+
+    # Wait for partitions to appear
+    sleep 2
+    partprobe "$TARGET_DISK"
+    sleep 1
+
+    success "Partitioning complete"
+    echo ""
+    lsblk "$TARGET_DISK"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FORMATTING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+format_partitions() {
+    step "Formatting partitions"
+
+    # Format EFI
+    info "Formatting EFI partition ($EFI_PART)..."
+    mkfs.fat -F32 -n BOOT "$EFI_PART"
+    success "EFI formatted"
+
+    # Format swap if present
+    if [[ -n "$SWAP_PART" ]]; then
+        info "Formatting swap partition ($SWAP_PART)..."
+        mkswap -L swap "$SWAP_PART"
+        success "Swap formatted"
+    fi
+
+    # Format root
+    info "Formatting root partition ($ROOT_PART) as $ROOT_FS..."
+    case "$ROOT_FS" in
+        ext4)
+            mkfs.ext4 -L nixos "$ROOT_PART"
+            ;;
+        btrfs)
+            mkfs.btrfs -f -L nixos "$ROOT_PART"
+            ;;
+    esac
+    success "Root formatted"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MOUNTING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+mount_filesystems() {
+    step "Mounting filesystems"
+
+    # Mount root
+    info "Mounting root partition..."
+    if [[ "$ROOT_FS" == "btrfs" ]]; then
+        # Create subvolumes for BTRFS
+        mount -t btrfs "$ROOT_PART" "$MOUNT_POINT"
+        btrfs subvolume create "$MOUNT_POINT/@"
+        btrfs subvolume create "$MOUNT_POINT/@home"
+        btrfs subvolume create "$MOUNT_POINT/@nix"
+        umount "$MOUNT_POINT"
+
+        # Mount with subvolumes
+        mount -t btrfs -o subvol=@,compress=zstd,noatime "$ROOT_PART" "$MOUNT_POINT"
+        mkdir -p "$MOUNT_POINT"/{home,nix}
+        mount -t btrfs -o subvol=@home,compress=zstd,noatime "$ROOT_PART" "$MOUNT_POINT/home"
+        mount -t btrfs -o subvol=@nix,compress=zstd,noatime "$ROOT_PART" "$MOUNT_POINT/nix"
+    else
+        mount "$ROOT_PART" "$MOUNT_POINT"
+    fi
+    success "Root mounted"
+
+    # Mount EFI
+    info "Mounting EFI partition..."
+    mkdir -p "$MOUNT_POINT/boot"
+    mount "$EFI_PART" "$MOUNT_POINT/boot"
+    success "EFI mounted"
+
+    # Enable swap if present
+    if [[ -n "$SWAP_PART" ]]; then
+        info "Enabling swap..."
+        swapon "$SWAP_PART"
+        success "Swap enabled"
+    fi
+
+    echo ""
+    info "Mount status:"
+    df -h "$MOUNT_POINT" "$MOUNT_POINT/boot" 2>/dev/null | tail -n +2
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HOST CONFIGURATION (Integrated from osv-install)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+validate_hostname() {
+    local hostname="$1"
+    [[ "$hostname" =~ ^[a-z][a-z0-9-]*$ ]]
+}
+
+validate_username() {
+    local username="$1"
+    [[ "$username" =~ ^[a-z][a-z0-9-]*$ ]]
+}
+
+collect_host_info() {
+    step "Host Configuration"
+
+    # Hostname
+    while true; do
+        echo -en "${CYAN}Hostname: ${NC}"
+        read -r HOSTNAME
+        if validate_hostname "$HOSTNAME"; then
+            break
+        else
+            error "Invalid hostname. Use lowercase letters, numbers, hyphens."
+        fi
+    done
+
+    # Username
+    while true; do
+        echo -en "${CYAN}Username: ${NC}"
+        read -r USERNAME
+        if validate_username "$USERNAME"; then
+            break
+        else
+            error "Invalid username. Use lowercase letters, numbers, hyphens."
+        fi
+    done
+
+    # User description
+    echo -en "${CYAN}User display name: ${NC}"
+    read -r USER_DESC
+
+    # GPU
+    echo ""
+    prompt "GPU Stack:"
+    echo "  1) intel        - Intel integrated graphics"
+    echo "  2) amd          - AMD discrete/integrated"
+    echo "  3) nvidia       - NVIDIA discrete only"
+    echo "  4) nvidia-prime - Intel + NVIDIA hybrid laptop"
+    echo ""
+    while true; do
+        echo -en "${CYAN}Select GPU [1-4]: ${NC}"
+        read -r gpu_choice
+        case "$gpu_choice" in
+            1) GPU="intel"; break ;;
+            2) GPU="amd"; break ;;
+            3) GPU="nvidia"; break ;;
+            4) GPU="nvidia-prime"; break ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+
+    # Form factor
+    echo ""
+    if confirm "Is this a laptop?"; then
+        IS_LAPTOP="true"
+        HAS_INTERNAL_DISPLAY="true"
+    else
+        IS_LAPTOP="false"
+        HAS_INTERNAL_DISPLAY="false"
+    fi
+
+    # Bluetooth
+    if confirm "Has Bluetooth?"; then
+        HAS_BLUETOOTH="true"
+    else
+        HAS_BLUETOOTH="false"
+    fi
+
+    # Network
+    echo ""
+    prompt "Primary Network:"
+    echo "  1) ethernet - Ethernet only"
+    echo "  2) wifi     - WiFi only"
+    echo "  3) both     - Both ethernet and WiFi"
+    echo ""
+    while true; do
+        echo -en "${CYAN}Select network [1-3]: ${NC}"
+        read -r net_choice
+        case "$net_choice" in
+            1) PRIMARY_NETWORK="ethernet"; break ;;
+            2) PRIMARY_NETWORK="wifi"; break ;;
+            3) PRIMARY_NETWORK="both"; break ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+
+    # SIPs
+    echo ""
+    prompt "Software Intent Profiles (SIPs):"
+    echo ""
+
+    SIPS_GAMING="false"
+    SIPS_CREATOR="false"
+    SIPS_DEVELOPER="false"
+    SIPS_MEDIA="false"
+    SIPS_SECURITY="false"
+    SIPS_VIRTUALIZATION="false"
+    SIPS_COMPUTE="false"
+
+    confirm "Enable Gaming SIP? (Steam, Heroic, Lutris, OBS)" && SIPS_GAMING="true"
+    confirm "Enable Creator SIP? (GIMP, Blender, Kdenlive, Audacity)" && SIPS_CREATOR="true"
+    confirm "Enable Developer SIP? (VSCodium, Neovim, Docker)" && SIPS_DEVELOPER="true"
+    confirm "Enable Media SIP? (MPV, VLC, Spotify)" && SIPS_MEDIA="true"
+    confirm "Enable Security SIP? (Bitwarden, pass, YubiKey)" && SIPS_SECURITY="true"
+    confirm "Enable Virtualization SIP? (libvirt, QEMU, virt-manager)" && SIPS_VIRTUALIZATION="true"
+    confirm "Enable Compute SIP? (Julia, Octave, Python scientific)" && SIPS_COMPUTE="true"
+
+    # Timezone
+    echo ""
+    prompt "Timezone:"
+    echo "  1) America/Los_Angeles  (Pacific)"
+    echo "  2) America/Denver       (Mountain)"
+    echo "  3) America/Chicago      (Central)"
+    echo "  4) America/New_York     (Eastern)"
+    echo "  5) Europe/London        (GMT/BST)"
+    echo "  6) Europe/Berlin        (CET)"
+    echo "  7) Asia/Tokyo           (JST)"
+    echo "  8) UTC                  (Coordinated Universal Time)"
+    echo "  9) Other (enter manually)"
+    echo ""
+    while true; do
+        echo -en "${CYAN}Select timezone [1-9]: ${NC}"
+        read -r tz_choice
+        case "$tz_choice" in
+            1) TIMEZONE="America/Los_Angeles"; break ;;
+            2) TIMEZONE="America/Denver"; break ;;
+            3) TIMEZONE="America/Chicago"; break ;;
+            4) TIMEZONE="America/New_York"; break ;;
+            5) TIMEZONE="Europe/London"; break ;;
+            6) TIMEZONE="Europe/Berlin"; break ;;
+            7) TIMEZONE="Asia/Tokyo"; break ;;
+            8) TIMEZONE="UTC"; break ;;
+            9)
+                echo -en "${CYAN}Enter timezone (e.g., America/Phoenix): ${NC}"
+                read -r TIMEZONE
+                break
+                ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+
+    # Keyboard Layout
+    echo ""
+    prompt "Keyboard Layout:"
+    echo "  1) us      - US English"
+    echo "  2) us-intl - US International"
+    echo "  3) uk      - UK English"
+    echo "  4) de      - German"
+    echo "  5) fr      - French"
+    echo "  6) es      - Spanish"
+    echo "  7) dvorak  - Dvorak"
+    echo "  8) colemak - Colemak"
+    echo "  9) Other (enter manually)"
+    echo ""
+    while true; do
+        echo -en "${CYAN}Select keyboard layout [1-9]: ${NC}"
+        read -r kb_choice
+        case "$kb_choice" in
+            1) KEYBOARD="us"; break ;;
+            2) KEYBOARD="us-intl"; break ;;
+            3) KEYBOARD="uk"; break ;;
+            4) KEYBOARD="de"; break ;;
+            5) KEYBOARD="fr"; break ;;
+            6) KEYBOARD="es"; break ;;
+            7) KEYBOARD="dvorak"; break ;;
+            8) KEYBOARD="colemak"; break ;;
+            9)
+                echo -en "${CYAN}Enter layout: ${NC}"
+                read -r KEYBOARD
+                break
+                ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+
+    CONSOLE_KEYMAP="$KEYBOARD"
+
+    # 32-bit support
+    if [[ "$SIPS_GAMING" == "true" ]]; then
+        ENABLE_32BIT="true"
+    else
+        ENABLE_32BIT="false"
+    fi
+}
+
+verify_configuration() {
+    echo ""
+    prompt "═══════════════════════════════════════════════════════════════════"
+    prompt "                    VERIFY CONFIGURATION"
+    prompt "═══════════════════════════════════════════════════════════════════"
+    echo ""
+    echo -e "  ${BOLD}DISK:${NC}"
+    echo -e "    Target:          $TARGET_DISK"
+    echo -e "    Scheme:          $SCHEME"
+    echo -e "    Root FS:         $ROOT_FS"
+    [[ -n "${SWAP_PART:-}" ]] && echo -e "    Swap:            ${SWAP_SIZE}GB"
+    echo ""
+    echo -e "  ${BOLD}SYSTEM:${NC}"
+    echo -e "    Hostname:        $HOSTNAME"
+    echo -e "    Username:        $USERNAME"
+    echo -e "    Display Name:    $USER_DESC"
+    echo -e "    GPU Stack:       $GPU"
+    echo -e "    Laptop:          $IS_LAPTOP"
+    echo -e "    Bluetooth:       $HAS_BLUETOOTH"
+    echo -e "    Network:         $PRIMARY_NETWORK"
+    echo -e "    Timezone:        $TIMEZONE"
+    echo -e "    Keyboard:        $KEYBOARD"
+    echo -e "    32-bit Support:  $ENABLE_32BIT"
+    echo ""
+    echo -e "  ${BOLD}SIPs Enabled:${NC}"
+    [[ "$SIPS_GAMING" == "true" ]] && echo "    - Gaming"
+    [[ "$SIPS_CREATOR" == "true" ]] && echo "    - Creator"
+    [[ "$SIPS_DEVELOPER" == "true" ]] && echo "    - Developer"
+    [[ "$SIPS_MEDIA" == "true" ]] && echo "    - Media"
+    [[ "$SIPS_SECURITY" == "true" ]] && echo "    - Security"
+    [[ "$SIPS_VIRTUALIZATION" == "true" ]] && echo "    - Virtualization"
+    [[ "$SIPS_COMPUTE" == "true" ]] && echo "    - Compute"
+    echo ""
+
+    if ! confirm "Proceed with installation?"; then
+        error "Installation cancelled"
+        exit 1
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CLONE OSV REPOSITORY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+clone_osv_repo() {
+    step "Cloning OSV Repository"
+
+    OSV_DIR="$MOUNT_POINT/etc/nixos"
+
+    # Remove default configuration if exists
+    if [[ -d "$OSV_DIR" ]]; then
+        info "Removing default NixOS configuration..."
+        rm -rf "$OSV_DIR"
+    fi
+
+    info "Cloning OSV repository..."
+    git clone --branch "$OSV_BRANCH" "$OSV_REPO" "$OSV_DIR"
+
+    success "Repository cloned to $OSV_DIR"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GENERATE HOST CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+generate_facts() {
+    local host_dir="$OSV_DIR/hosts/$HOSTNAME"
+    mkdir -p "$host_dir"
+
+    cat > "$host_dir/facts.nix" << EOF
+# $HOSTNAME Host Facts
+#
+# Generated by OSV Bootstrap Installer
+{ ... }:
+
+{
+  osv.facts = {
+    gpu = "$GPU";
+    hasInternalDisplay = $HAS_INTERNAL_DISPLAY;
+    isLaptop = $IS_LAPTOP;
+    hasBluetooth = $HAS_BLUETOOTH;
+    primaryNetwork = "$PRIMARY_NETWORK";
+  };
+}
+EOF
+}
+
+generate_default_nix() {
+    local host_dir="$OSV_DIR/hosts/$HOSTNAME"
+
+    # Build extra groups
+    local extra_groups='[ "networkmanager" "wheel" "video"'
+    [[ "$SIPS_DEVELOPER" == "true" ]] && extra_groups="$extra_groups \"docker\""
+    [[ "$SIPS_VIRTUALIZATION" == "true" ]] && extra_groups="$extra_groups \"libvirtd\""
+    extra_groups="$extra_groups ]"
+
+    cat > "$host_dir/default.nix" << EOF
+# $HOSTNAME Host Configuration
+#
+# Generated by OSV Bootstrap Installer
+{ config, lib, pkgs, ... }:
+
+{
+  imports = [
+    ./hardware-configuration.nix
+    ./facts.nix
+  ];
+
+  # ═══════════════════════════════════════════════════════════════════
+  # CORE
+  # ═══════════════════════════════════════════════════════════════════
+  osv.core = {
+    enable = true;
+    stateVersion = "25.11";
+    allowUnfree = true;
+
+    secretService = {
+      enable = true;
+      seahorse = true;
+    };
+
+    audio = {
+      enable = true;
+      support32Bit = $ENABLE_32BIT;
+    };
+
+    printing.enable = true;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # NETWORKING
+  # ═══════════════════════════════════════════════════════════════════
+  osv.networking = {
+    enable = true;
+    hostName = "$HOSTNAME";
+
+    networkManager = {
+      enable = true;
+      applet = false;
+    };
+
+    ssh = {
+      enable = true;
+      openFirewall = false;
+    };
+
+    bluetooth.enable = $HAS_BLUETOOTH;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # USERS
+  # ═══════════════════════════════════════════════════════════════════
+  osv.users = {
+    primaryUser = "$USERNAME";
+    primaryUserDescription = "$USER_DESC";
+    extraGroups = $extra_groups;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # HARDWARE - GPU
+  # ═══════════════════════════════════════════════════════════════════
+  osv.hardware.gpu = {
+    stack = "$GPU";
+    enable32Bit = $ENABLE_32BIT;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # ENVIRONMENT (Niri + DMS)
+  # ═══════════════════════════════════════════════════════════════════
+  osv.environment = {
+    enable = true;
+    session = "niri";
+
+    dms = {
+      enable = true;
+      systemd = true;
+
+      greeter = {
+        enable = true;
+        configHome = "/home/$USERNAME";
+        configFiles = [
+          "/home/$USERNAME/.config/DankMaterialShell/settings.json"
+        ];
+        logs = {
+          save = true;
+          path = "/tmp/dms-greeter.log";
+        };
+      };
+    };
+
+    portals.enable = true;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # APPS
+  # ═══════════════════════════════════════════════════════════════════
+  osv.apps = {
+    userapps.enable = true;
+EOF
+
+    # Add SIPs
+    if [[ "$SIPS_GAMING" == "true" ]]; then
+        cat >> "$host_dir/default.nix" << EOF
+    gaming = {
+      enable = true;
+      tier1.steam.remotePlayFirewall = true;
+    };
+EOF
+    fi
+
+    [[ "$SIPS_CREATOR" == "true" ]] && echo "    creator.enable = true;" >> "$host_dir/default.nix"
+
+    if [[ "$SIPS_DEVELOPER" == "true" ]]; then
+        cat >> "$host_dir/default.nix" << EOF
+    developer = {
+      enable = true;
+      formatter = "alejandra";
+      containers = {
+        enable = true;
+        docker = true;
+      };
+    };
+EOF
+    fi
+
+    [[ "$SIPS_MEDIA" == "true" ]] && echo "    media.enable = true;" >> "$host_dir/default.nix"
+    [[ "$SIPS_SECURITY" == "true" ]] && echo "    security.enable = true;" >> "$host_dir/default.nix"
+    [[ "$SIPS_VIRTUALIZATION" == "true" ]] && echo "    virtualization.enable = true;" >> "$host_dir/default.nix"
+    [[ "$SIPS_COMPUTE" == "true" ]] && echo "    compute.enable = true;" >> "$host_dir/default.nix"
+
+    cat >> "$host_dir/default.nix" << EOF
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # META
+  # ═══════════════════════════════════════════════════════════════════
+  osv.meta.logging = {
+    enable = true;
+    level = "info";
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # BOOTLOADER
+  # ═══════════════════════════════════════════════════════════════════
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  # ═══════════════════════════════════════════════════════════════════
+  # LOCALE & KEYBOARD
+  # ═══════════════════════════════════════════════════════════════════
+  time.timeZone = "$TIMEZONE";
+  i18n.defaultLocale = "en_US.UTF-8";
+
+  # Console keymap (TTY)
+  console.keyMap = "$CONSOLE_KEYMAP";
+
+  # X11/Wayland keyboard
+  services.xserver.xkb.layout = "$KEYBOARD";
+}
+EOF
+}
+
+generate_hardware_config() {
+    step "Generating hardware configuration"
+
+    local host_dir="$OSV_DIR/hosts/$HOSTNAME"
+
+    info "Running nixos-generate-config..."
+    nixos-generate-config --root "$MOUNT_POINT" --show-hardware-config > "$host_dir/hardware-configuration.nix"
+
+    success "Hardware configuration generated"
+}
+
+update_flake() {
+    step "Updating flake.nix"
+
+    local entry="        # $HOSTNAME - Added by OSV Bootstrap
+        $HOSTNAME = mkHost {
+          hostName = \"$HOSTNAME\";
+          system = \"x86_64-linux\";
+        };"
+
+    # Add host to flake.nix
+    sed -i "/^      };$/i\\
+\\
+$entry" "$OSV_DIR/flake.nix"
+
+    success "Host added to flake.nix"
+}
+
+generate_host_config() {
+    step "Generating OSV host configuration"
+
+    info "Creating facts.nix..."
+    generate_facts
+    success "facts.nix created"
+
+    info "Creating default.nix..."
+    generate_default_nix
+    success "default.nix created"
+
+    generate_hardware_config
+    update_flake
+
+    echo ""
+    info "Generated files:"
+    ls -la "$OSV_DIR/hosts/$HOSTNAME/"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RUN NIXOS-INSTALL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+run_nixos_install() {
+    step "Installing NixOS with OSV configuration"
+
+    info "This may take 15-30 minutes depending on your system and network..."
+    echo ""
+
+    # Run nixos-install with the flake
+    nixos-install --root "$MOUNT_POINT" --flake "$OSV_DIR#$HOSTNAME" --no-root-passwd
+
+    success "NixOS installation complete!"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SET USER PASSWORD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+set_user_password() {
+    step "Set user password"
+
+    info "Setting password for user '$USERNAME'..."
+    echo ""
+
+    # Use nixos-enter to set the password in the chroot
+    nixos-enter --root "$MOUNT_POINT" -c "passwd $USERNAME"
+
+    success "Password set"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FINISH
+# ═══════════════════════════════════════════════════════════════════════════════
+
+finish_installation() {
+    echo ""
+    echo -e "${GREEN}"
+    echo "╔═══════════════════════════════════════════════════════════════════════════════╗"
+    echo "║                                                                               ║"
+    echo "║                    ✓ OSV INSTALLATION COMPLETE ✓                              ║"
+    echo "║                                                                               ║"
+    echo "╚═══════════════════════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    echo ""
+    echo -e "  ${BOLD}System Details:${NC}"
+    echo "    Hostname:  $HOSTNAME"
+    echo "    Username:  $USERNAME"
+    echo "    Timezone:  $TIMEZONE"
+    echo ""
+    echo -e "  ${BOLD}Next Steps:${NC}"
+    echo "    1. Remove installation media"
+    echo "    2. Reboot: ${CYAN}reboot${NC}"
+    echo "    3. Login with your username and password"
+    echo ""
+    echo -e "  ${BOLD}Post-Install:${NC}"
+    echo "    - Configuration is in /etc/nixos"
+    echo "    - Rebuild with: sudo nixos-rebuild switch --flake /etc/nixos#$HOSTNAME"
+    echo ""
+
+    if confirm_yes "Reboot now?"; then
+        info "Rebooting..."
+        umount -R "$MOUNT_POINT" 2>/dev/null || true
+        reboot
+    else
+        echo ""
+        info "When ready, unmount and reboot:"
+        echo "    umount -R /mnt"
+        echo "    reboot"
+        echo ""
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+main() {
+    banner
+
+    # Prerequisites
+    check_root
+    check_uefi
+    check_network
+    check_installer_env
+
+    echo ""
+    prompt "Welcome to the ONYX OSV Bootstrap Installer!"
+    echo ""
+    echo "This script will:"
+    echo "  1. Partition and format your disk"
+    echo "  2. Clone the OSV repository"
+    echo "  3. Configure your host"
+    echo "  4. Install NixOS with OSV"
+    echo "  5. Set up your user account"
+    echo ""
+
+    if ! confirm "Ready to begin?"; then
+        error "Installation cancelled"
+        exit 1
+    fi
+
+    # Disk setup
+    select_disk
+    select_partition_scheme
+
+    # Host configuration
+    collect_host_info
+    verify_configuration
+
+    # Execute installation
+    partition_disk
+    format_partitions
+    mount_filesystems
+    clone_osv_repo
+    generate_host_config
+    run_nixos_install
+    set_user_password
+    finish_installation
+}
+
+main "$@"
