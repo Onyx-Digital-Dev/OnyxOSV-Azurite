@@ -1,0 +1,558 @@
+#!/usr/bin/env bash
+# ═══════════════════════════════════════════════════════════════════════════════
+# ONYX OSV v0.2 - Azurite Installer
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Interactive installer for OSV host configurations.
+# Run from the root of the OSV repository.
+#
+# Usage: ./osv-install
+#
+set -euo pipefail
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+BOLD='\033[1m'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+banner() {
+    echo -e "${CYAN}"
+    echo "╔═══════════════════════════════════════════════════════════════════════════════╗"
+    echo "║                                                                               ║"
+    echo "║   ██████╗ ███╗   ██╗██╗   ██╗██╗  ██╗     ██████╗ ███████╗██╗   ██╗          ║"
+    echo "║  ██╔═══██╗████╗  ██║╚██╗ ██╔╝╚██╗██╔╝    ██╔═══██╗██╔════╝██║   ██║          ║"
+    echo "║  ██║   ██║██╔██╗ ██║ ╚████╔╝  ╚███╔╝     ██║   ██║███████╗██║   ██║          ║"
+    echo "║  ██║   ██║██║╚██╗██║  ╚██╔╝   ██╔██╗     ██║   ██║╚════██║╚██╗ ██╔╝          ║"
+    echo "║  ╚██████╔╝██║ ╚████║   ██║   ██╔╝ ██╗    ╚██████╔╝███████║ ╚████╔╝           ║"
+    echo "║   ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝     ╚═════╝ ╚══════╝  ╚═══╝            ║"
+    echo "║                                                                               ║"
+    echo "║                        v0.2 Azurite - Host Installer                          ║"
+    echo "║                                                                               ║"
+    echo "╚═══════════════════════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+}
+
+info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+success() {
+    echo -e "${GREEN}[OK]${NC} $1"
+}
+
+warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+prompt() {
+    echo -e "${BOLD}$1${NC}"
+}
+
+confirm() {
+    local prompt="$1"
+    local response
+    echo -en "${YELLOW}$prompt [y/N]: ${NC}"
+    read -r response
+    [[ "$response" =~ ^[Yy]$ ]]
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+check_prerequisites() {
+    info "Checking prerequisites..."
+
+    # Check if running from OSV repo root
+    if [[ ! -f "flake.nix" ]] || [[ ! -d "hosts" ]] || [[ ! -d "modules/osv" ]]; then
+        error "Must run from OSV repository root"
+        exit 1
+    fi
+
+    # Check for required tools
+    for cmd in nixos-generate-config sed; do
+        if ! command -v "$cmd" &> /dev/null; then
+            error "Required command not found: $cmd"
+            exit 1
+        fi
+    done
+
+    success "Prerequisites OK"
+}
+
+validate_hostname() {
+    local hostname="$1"
+    if [[ ! "$hostname" =~ ^[a-z][a-z0-9-]*$ ]]; then
+        return 1
+    fi
+    if [[ -d "hosts/$hostname" ]]; then
+        warn "Host '$hostname' already exists!"
+        return 1
+    fi
+    return 0
+}
+
+validate_username() {
+    local username="$1"
+    if [[ ! "$username" =~ ^[a-z][a-z0-9-]*$ ]]; then
+        return 1
+    fi
+    return 0
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMPTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+collect_info() {
+    echo ""
+    prompt "═══════════════════════════════════════════════════════════════════"
+    prompt "                        HOST CONFIGURATION"
+    prompt "═══════════════════════════════════════════════════════════════════"
+    echo ""
+
+    # Hostname
+    while true; do
+        echo -en "${CYAN}Hostname: ${NC}"
+        read -r HOSTNAME
+        if validate_hostname "$HOSTNAME"; then
+            break
+        else
+            error "Invalid hostname. Use lowercase letters, numbers, hyphens. Must not exist."
+        fi
+    done
+
+    # Username
+    while true; do
+        echo -en "${CYAN}Username: ${NC}"
+        read -r USERNAME
+        if validate_username "$USERNAME"; then
+            break
+        else
+            error "Invalid username. Use lowercase letters, numbers, hyphens."
+        fi
+    done
+
+    # User description
+    echo -en "${CYAN}User display name: ${NC}"
+    read -r USER_DESC
+
+    # GPU
+    echo ""
+    echo -e "${BOLD}GPU Stack:${NC}"
+    echo "  1) intel        - Intel integrated graphics"
+    echo "  2) amd          - AMD discrete/integrated"
+    echo "  3) nvidia       - NVIDIA discrete only"
+    echo "  4) nvidia-prime - Intel + NVIDIA hybrid laptop"
+    echo ""
+    while true; do
+        echo -en "${CYAN}Select GPU [1-4]: ${NC}"
+        read -r gpu_choice
+        case "$gpu_choice" in
+            1) GPU="intel"; break ;;
+            2) GPU="amd"; break ;;
+            3) GPU="nvidia"; break ;;
+            4) GPU="nvidia-prime"; break ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+
+    # Form factor
+    echo ""
+    if confirm "Is this a laptop?"; then
+        IS_LAPTOP="true"
+        HAS_INTERNAL_DISPLAY="true"
+    else
+        IS_LAPTOP="false"
+        HAS_INTERNAL_DISPLAY="false"
+    fi
+
+    # Bluetooth
+    if confirm "Has Bluetooth?"; then
+        HAS_BLUETOOTH="true"
+    else
+        HAS_BLUETOOTH="false"
+    fi
+
+    # Network
+    echo ""
+    echo -e "${BOLD}Primary Network:${NC}"
+    echo "  1) ethernet - Ethernet only"
+    echo "  2) wifi     - WiFi only"
+    echo "  3) both     - Both ethernet and WiFi"
+    echo ""
+    while true; do
+        echo -en "${CYAN}Select network [1-3]: ${NC}"
+        read -r net_choice
+        case "$net_choice" in
+            1) PRIMARY_NETWORK="ethernet"; break ;;
+            2) PRIMARY_NETWORK="wifi"; break ;;
+            3) PRIMARY_NETWORK="both"; break ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+
+    # SIPs
+    echo ""
+    prompt "Software Intent Profiles (SIPs):"
+    echo ""
+
+    SIPS_GAMING="false"
+    SIPS_CREATOR="false"
+    SIPS_DEVELOPER="false"
+    SIPS_MEDIA="false"
+    SIPS_SECURITY="false"
+    SIPS_VIRTUALIZATION="false"
+    SIPS_COMPUTE="false"
+
+    confirm "Enable Gaming SIP? (Steam, Heroic, Lutris, OBS)" && SIPS_GAMING="true"
+    confirm "Enable Creator SIP? (GIMP, Blender, Kdenlive, Audacity)" && SIPS_CREATOR="true"
+    confirm "Enable Developer SIP? (VSCodium, Neovim, Docker)" && SIPS_DEVELOPER="true"
+    confirm "Enable Media SIP? (MPV, VLC, Spotify)" && SIPS_MEDIA="true"
+    confirm "Enable Security SIP? (Bitwarden, pass, YubiKey)" && SIPS_SECURITY="true"
+    confirm "Enable Virtualization SIP? (libvirt, QEMU, virt-manager)" && SIPS_VIRTUALIZATION="true"
+    confirm "Enable Compute SIP? (Julia, Octave, Python scientific)" && SIPS_COMPUTE="true"
+
+    # Timezone
+    echo ""
+    echo -en "${CYAN}Timezone [America/Los_Angeles]: ${NC}"
+    read -r TIMEZONE
+    TIMEZONE="${TIMEZONE:-America/Los_Angeles}"
+
+    # 32-bit support
+    if [[ "$SIPS_GAMING" == "true" ]]; then
+        ENABLE_32BIT="true"
+    else
+        ENABLE_32BIT="false"
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VERIFICATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+verify_choices() {
+    echo ""
+    prompt "═══════════════════════════════════════════════════════════════════"
+    prompt "                        VERIFY CONFIGURATION"
+    prompt "═══════════════════════════════════════════════════════════════════"
+    echo ""
+    echo -e "  ${BOLD}Hostname:${NC}        $HOSTNAME"
+    echo -e "  ${BOLD}Username:${NC}        $USERNAME"
+    echo -e "  ${BOLD}Display Name:${NC}    $USER_DESC"
+    echo -e "  ${BOLD}GPU Stack:${NC}       $GPU"
+    echo -e "  ${BOLD}Laptop:${NC}          $IS_LAPTOP"
+    echo -e "  ${BOLD}Bluetooth:${NC}       $HAS_BLUETOOTH"
+    echo -e "  ${BOLD}Network:${NC}         $PRIMARY_NETWORK"
+    echo -e "  ${BOLD}Timezone:${NC}        $TIMEZONE"
+    echo -e "  ${BOLD}32-bit Support:${NC}  $ENABLE_32BIT"
+    echo ""
+    echo -e "  ${BOLD}SIPs Enabled:${NC}"
+    [[ "$SIPS_GAMING" == "true" ]] && echo "    - Gaming"
+    [[ "$SIPS_CREATOR" == "true" ]] && echo "    - Creator"
+    [[ "$SIPS_DEVELOPER" == "true" ]] && echo "    - Developer"
+    [[ "$SIPS_MEDIA" == "true" ]] && echo "    - Media"
+    [[ "$SIPS_SECURITY" == "true" ]] && echo "    - Security"
+    [[ "$SIPS_VIRTUALIZATION" == "true" ]] && echo "    - Virtualization"
+    [[ "$SIPS_COMPUTE" == "true" ]] && echo "    - Compute"
+    echo ""
+
+    if ! confirm "Is this configuration correct?"; then
+        error "Installation cancelled"
+        exit 1
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GENERATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+generate_facts() {
+    cat > "hosts/$HOSTNAME/facts.nix" << EOF
+# $HOSTNAME Host Facts
+#
+# Generated by OSV Installer
+{ ... }:
+
+{
+  osv.facts = {
+    gpu = "$GPU";
+    hasInternalDisplay = $HAS_INTERNAL_DISPLAY;
+    isLaptop = $IS_LAPTOP;
+    hasBluetooth = $HAS_BLUETOOTH;
+    primaryNetwork = "$PRIMARY_NETWORK";
+  };
+}
+EOF
+}
+
+generate_default() {
+    # Build extra groups
+    local extra_groups='[ "networkmanager" "wheel" "video"'
+    [[ "$SIPS_DEVELOPER" == "true" ]] && extra_groups="$extra_groups \"docker\""
+    [[ "$SIPS_VIRTUALIZATION" == "true" ]] && extra_groups="$extra_groups \"libvirtd\""
+    extra_groups="$extra_groups ]"
+
+    cat > "hosts/$HOSTNAME/default.nix" << EOF
+# $HOSTNAME Host Configuration
+#
+# Generated by OSV Installer
+{ config, lib, pkgs, ... }:
+
+{
+  imports = [
+    ./hardware-configuration.nix
+    ./facts.nix
+  ];
+
+  # ═══════════════════════════════════════════════════════════════════
+  # CORE
+  # ═══════════════════════════════════════════════════════════════════
+  osv.core = {
+    enable = true;
+    stateVersion = "25.11";
+    allowUnfree = true;
+
+    secretService = {
+      enable = true;
+      seahorse = true;
+    };
+
+    audio = {
+      enable = true;
+      support32Bit = $ENABLE_32BIT;
+    };
+
+    printing.enable = true;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # NETWORKING
+  # ═══════════════════════════════════════════════════════════════════
+  osv.networking = {
+    enable = true;
+    hostName = "$HOSTNAME";
+
+    networkManager = {
+      enable = true;
+      applet = false;
+    };
+
+    ssh = {
+      enable = true;
+      openFirewall = false;
+    };
+
+    bluetooth.enable = $HAS_BLUETOOTH;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # USERS
+  # ═══════════════════════════════════════════════════════════════════
+  osv.users = {
+    primaryUser = "$USERNAME";
+    primaryUserDescription = "$USER_DESC";
+    extraGroups = $extra_groups;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # HARDWARE - GPU
+  # ═══════════════════════════════════════════════════════════════════
+  osv.hardware.gpu = {
+    stack = "$GPU";
+    enable32Bit = $ENABLE_32BIT;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # ENVIRONMENT (Niri + DMS)
+  # ═══════════════════════════════════════════════════════════════════
+  osv.environment = {
+    enable = true;
+    session = "niri";
+
+    dms = {
+      enable = true;
+      systemd = true;
+
+      greeter = {
+        enable = true;
+        configHome = "/home/$USERNAME";
+        configFiles = [
+          "/home/$USERNAME/.config/DankMaterialShell/settings.json"
+        ];
+        logs = {
+          save = true;
+          path = "/tmp/dms-greeter.log";
+        };
+      };
+    };
+
+    portals.enable = true;
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # APPS
+  # ═══════════════════════════════════════════════════════════════════
+  osv.apps = {
+    userapps.enable = true;
+EOF
+
+    # Add SIPs
+    if [[ "$SIPS_GAMING" == "true" ]]; then
+        cat >> "hosts/$HOSTNAME/default.nix" << EOF
+    gaming = {
+      enable = true;
+      tier1.steam.remotePlayFirewall = true;
+    };
+EOF
+    fi
+
+    [[ "$SIPS_CREATOR" == "true" ]] && echo "    creator.enable = true;" >> "hosts/$HOSTNAME/default.nix"
+
+    if [[ "$SIPS_DEVELOPER" == "true" ]]; then
+        cat >> "hosts/$HOSTNAME/default.nix" << EOF
+    developer = {
+      enable = true;
+      formatter = "alejandra";
+      containers = {
+        enable = true;
+        docker = true;
+      };
+    };
+EOF
+    fi
+
+    [[ "$SIPS_MEDIA" == "true" ]] && echo "    media.enable = true;" >> "hosts/$HOSTNAME/default.nix"
+    [[ "$SIPS_SECURITY" == "true" ]] && echo "    security.enable = true;" >> "hosts/$HOSTNAME/default.nix"
+    [[ "$SIPS_VIRTUALIZATION" == "true" ]] && echo "    virtualization.enable = true;" >> "hosts/$HOSTNAME/default.nix"
+    [[ "$SIPS_COMPUTE" == "true" ]] && echo "    compute.enable = true;" >> "hosts/$HOSTNAME/default.nix"
+
+    cat >> "hosts/$HOSTNAME/default.nix" << EOF
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # META
+  # ═══════════════════════════════════════════════════════════════════
+  osv.meta.logging = {
+    enable = true;
+    level = "info";
+  };
+
+  # ═══════════════════════════════════════════════════════════════════
+  # BOOTLOADER
+  # ═══════════════════════════════════════════════════════════════════
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  # ═══════════════════════════════════════════════════════════════════
+  # LOCALE
+  # ═══════════════════════════════════════════════════════════════════
+  time.timeZone = "$TIMEZONE";
+  i18n.defaultLocale = "en_US.UTF-8";
+}
+EOF
+}
+
+generate_hardware_config() {
+    info "Generating hardware-configuration.nix..."
+    nixos-generate-config --show-hardware-config > "hosts/$HOSTNAME/hardware-configuration.nix"
+    success "Hardware configuration generated"
+}
+
+update_flake() {
+    info "Adding host to flake.nix..."
+
+    # Find the closing of nixosConfigurations and add our host before it
+    # We'll add it before the last closing brace of nixosConfigurations
+    local entry="        # $HOSTNAME - Added by OSV Installer
+        $HOSTNAME = mkHost {
+          hostName = \"$HOSTNAME\";
+          system = \"x86_64-linux\";
+        };"
+
+    # Use sed to add the entry before the closing of nixosConfigurations
+    # Find the pattern "      };" that closes nixosConfigurations
+    sed -i "/^      };$/i\\
+\\
+$entry" flake.nix
+
+    success "Host added to flake.nix"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+main() {
+    banner
+    check_prerequisites
+    collect_info
+    verify_choices
+
+    echo ""
+    prompt "═══════════════════════════════════════════════════════════════════"
+    prompt "                        GENERATING CONFIG"
+    prompt "═══════════════════════════════════════════════════════════════════"
+    echo ""
+
+    # Create host directory
+    info "Creating hosts/$HOSTNAME/..."
+    mkdir -p "hosts/$HOSTNAME"
+    success "Directory created"
+
+    # Generate configs
+    info "Generating facts.nix..."
+    generate_facts
+    success "facts.nix generated"
+
+    info "Generating default.nix..."
+    generate_default
+    success "default.nix generated"
+
+    # Generate hardware config
+    generate_hardware_config
+
+    # Update flake.nix
+    update_flake
+
+    echo ""
+    prompt "═══════════════════════════════════════════════════════════════════"
+    prompt "                        INSTALLATION COMPLETE"
+    prompt "═══════════════════════════════════════════════════════════════════"
+    echo ""
+    success "Host '$HOSTNAME' has been configured!"
+    echo ""
+    echo -e "  ${BOLD}Generated files:${NC}"
+    echo "    - hosts/$HOSTNAME/facts.nix"
+    echo "    - hosts/$HOSTNAME/default.nix"
+    echo "    - hosts/$HOSTNAME/hardware-configuration.nix"
+    echo ""
+
+    if confirm "Run nixos-rebuild switch now?"; then
+        echo ""
+        info "Running: sudo nixos-rebuild switch --flake .#$HOSTNAME"
+        echo ""
+        sudo nixos-rebuild switch --flake ".#$HOSTNAME"
+        echo ""
+        success "Build complete! Reboot to apply changes."
+    else
+        echo ""
+        echo -e "  ${BOLD}To build manually:${NC}"
+        echo "    sudo nixos-rebuild switch --flake .#$HOSTNAME"
+        echo ""
+    fi
+}
+
+main "$@"
