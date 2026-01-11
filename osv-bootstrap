@@ -647,7 +647,7 @@ verify_configuration() {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 clone_osv_repo() {
-    step "Cloning OSV Repository"
+    step "Setting up OSV Repository"
 
     OSV_DIR="$MOUNT_POINT/etc/nixos"
 
@@ -657,10 +657,42 @@ clone_osv_repo() {
         rm -rf "$OSV_DIR"
     fi
 
-    info "Cloning OSV repository..."
-    git clone --branch "$OSV_BRANCH" "$OSV_REPO" "$OSV_DIR"
+    mkdir -p "$OSV_DIR"
 
-    success "Repository cloned to $OSV_DIR"
+    # Check for pre-loaded OSV repo (from custom ISO)
+    if [[ -d "/osv" ]] && [[ -f "/osv/flake.nix" ]]; then
+        info "Using pre-loaded OSV repository from ISO..."
+        cp -r /osv/* "$OSV_DIR/"
+
+        # Initialize git repo for future updates
+        cd "$OSV_DIR"
+        git init
+        git add -A
+        git commit -m "Initial OSV installation from ISO"
+        git remote add origin "$OSV_REPO" 2>/dev/null || true
+        cd - > /dev/null
+
+        success "Repository copied from ISO"
+    elif [[ -d "/etc/osv-repo" ]] && [[ -f "/etc/osv-repo/flake.nix" ]]; then
+        info "Using pre-loaded OSV repository..."
+        cp -r /etc/osv-repo/* "$OSV_DIR/"
+
+        # Initialize git repo for future updates
+        cd "$OSV_DIR"
+        git init
+        git add -A
+        git commit -m "Initial OSV installation from ISO"
+        git remote add origin "$OSV_REPO" 2>/dev/null || true
+        cd - > /dev/null
+
+        success "Repository copied from pre-loaded source"
+    else
+        info "Cloning OSV repository from GitHub..."
+        git clone --branch "$OSV_BRANCH" "$OSV_REPO" "$OSV_DIR"
+        success "Repository cloned"
+    fi
+
+    info "OSV repository ready at $OSV_DIR"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════

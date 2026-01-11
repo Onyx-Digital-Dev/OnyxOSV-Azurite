@@ -125,5 +125,36 @@
           };
         }
       );
+
+      # ═══════════════════════════════════════════════════════════════════
+      # INSTALLATION ISO
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # Build with: nix build .#iso
+      # Output:     result/iso/osv-azurite-*.iso
+      #
+      # The ISO includes:
+      #   - OSV repository pre-loaded at /osv
+      #   - osv-bootstrap installer script
+      #   - All required tools (parted, git, etc.)
+      #   - NetworkManager for easy WiFi setup
+      #
+      packages = forAllSystems (system:
+        let
+          # Build the ISO configuration
+          isoConfig = nixpkgs.lib.nixosSystem {
+            inherit system;
+            modules = [
+              ./iso
+            ];
+          };
+        in {
+          # ISO image
+          iso = isoConfig.config.system.build.isoImage;
+
+          # Default package is the ISO
+          default = isoConfig.config.system.build.isoImage;
+        }
+      );
     };
 }
