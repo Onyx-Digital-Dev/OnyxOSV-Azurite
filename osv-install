@@ -227,9 +227,70 @@ collect_info() {
 
     # Timezone
     echo ""
-    echo -en "${CYAN}Timezone [America/Los_Angeles]: ${NC}"
-    read -r TIMEZONE
-    TIMEZONE="${TIMEZONE:-America/Los_Angeles}"
+    echo -e "${BOLD}Timezone:${NC}"
+    echo "  1) America/Los_Angeles  (Pacific)"
+    echo "  2) America/Denver       (Mountain)"
+    echo "  3) America/Chicago      (Central)"
+    echo "  4) America/New_York     (Eastern)"
+    echo "  5) Europe/London        (GMT/BST)"
+    echo "  6) Europe/Berlin        (CET)"
+    echo "  7) Asia/Tokyo           (JST)"
+    echo "  8) UTC                  (Coordinated Universal Time)"
+    echo "  9) Other (enter manually)"
+    echo ""
+    while true; do
+        echo -en "${CYAN}Select timezone [1-9]: ${NC}"
+        read -r tz_choice
+        case "$tz_choice" in
+            1) TIMEZONE="America/Los_Angeles"; break ;;
+            2) TIMEZONE="America/Denver"; break ;;
+            3) TIMEZONE="America/Chicago"; break ;;
+            4) TIMEZONE="America/New_York"; break ;;
+            5) TIMEZONE="Europe/London"; break ;;
+            6) TIMEZONE="Europe/Berlin"; break ;;
+            7) TIMEZONE="Asia/Tokyo"; break ;;
+            8) TIMEZONE="UTC"; break ;;
+            9)
+                echo -en "${CYAN}Enter timezone (e.g., America/Phoenix): ${NC}"
+                read -r TIMEZONE
+                break
+                ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+
+    # Keyboard Layout
+    echo ""
+    echo -e "${BOLD}Keyboard Layout:${NC}"
+    echo "  1) us      - US English"
+    echo "  2) us-intl - US International"
+    echo "  3) uk      - UK English"
+    echo "  4) de      - German"
+    echo "  5) fr      - French"
+    echo "  6) es      - Spanish"
+    echo "  7) Other (enter manually)"
+    echo ""
+    while true; do
+        echo -en "${CYAN}Select keyboard layout [1-7]: ${NC}"
+        read -r kb_choice
+        case "$kb_choice" in
+            1) KEYBOARD="us"; break ;;
+            2) KEYBOARD="us-intl"; break ;;
+            3) KEYBOARD="uk"; break ;;
+            4) KEYBOARD="de"; break ;;
+            5) KEYBOARD="fr"; break ;;
+            6) KEYBOARD="es"; break ;;
+            7)
+                echo -en "${CYAN}Enter layout (e.g., dvorak): ${NC}"
+                read -r KEYBOARD
+                break
+                ;;
+            *) error "Invalid selection" ;;
+        esac
+    done
+
+    # Console keymap (for boot/TTY)
+    CONSOLE_KEYMAP="$KEYBOARD"
 
     # 32-bit support
     if [[ "$SIPS_GAMING" == "true" ]]; then
@@ -257,6 +318,7 @@ verify_choices() {
     echo -e "  ${BOLD}Bluetooth:${NC}       $HAS_BLUETOOTH"
     echo -e "  ${BOLD}Network:${NC}         $PRIMARY_NETWORK"
     echo -e "  ${BOLD}Timezone:${NC}        $TIMEZONE"
+    echo -e "  ${BOLD}Keyboard:${NC}        $KEYBOARD"
     echo -e "  ${BOLD}32-bit Support:${NC}  $ENABLE_32BIT"
     echo ""
     echo -e "  ${BOLD}SIPs Enabled:${NC}"
@@ -457,10 +519,16 @@ EOF
   boot.loader.efi.canTouchEfiVariables = true;
 
   # ═══════════════════════════════════════════════════════════════════
-  # LOCALE
+  # LOCALE & KEYBOARD
   # ═══════════════════════════════════════════════════════════════════
   time.timeZone = "$TIMEZONE";
   i18n.defaultLocale = "en_US.UTF-8";
+
+  # Console keymap (TTY)
+  console.keyMap = "$CONSOLE_KEYMAP";
+
+  # X11/Wayland keyboard
+  services.xserver.xkb.layout = "$KEYBOARD";
 }
 EOF
 }
