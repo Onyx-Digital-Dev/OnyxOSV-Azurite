@@ -2,11 +2,6 @@
 #
 # Activates when osv.hardware.gpu.stack = "intel"
 # Provides Intel integrated graphics configuration (Mesa).
-#
-# Supports both modern and legacy Intel GPUs:
-# - Sandy Bridge (HD 3000) - OpenGL 3.1
-# - Ivy Bridge (HD 4000) - OpenGL 4.0
-# - Haswell+ - OpenGL 4.5+
 { config, lib, pkgs, ... }:
 
 let
@@ -24,25 +19,27 @@ in
       enable32Bit = cfg.enable32Bit;
       extraPackages = with pkgs; [
         mesa
-        # VAAPI drivers - include both for compatibility
-        intel-vaapi-driver    # For older Intel (Sandy Bridge through Haswell)
-        intel-media-driver    # For newer Intel (Broadwell+), ignored on old hardware
+        intel-media-driver    # VAAPI for newer Intel (Broadwell+)
+        intel-vaapi-driver    # VAAPI for older Intel
+        vpl-gpu-rt            # QSV
+        intel-compute-runtime # OpenCL
       ];
       extraPackages32 = lib.mkIf cfg.enable32Bit (with pkgs.driversi686Linux; [
         mesa
+        intel-media-driver
         intel-vaapi-driver
       ]);
     };
 
     # Environment variables for Intel GPU compatibility
     environment.sessionVariables = {
-      # Use legacy VAAPI driver for older Intel (Sandy/Ivy Bridge)
-      # Newer hardware will override automatically
-      LIBVA_DRIVER_NAME = "i965";
+      # Help Steam CEF rendering
+      STEAM_FORCE_DESKTOPUI_SCALING = "1";
     };
 
-    # Mesa utils for diagnostics
+    # Vulkan tools and mesa utils for diagnostics
     environment.systemPackages = with pkgs; [
+      vulkan-tools
       mesa-demos  # provides glxinfo, glxgears
     ];
   };

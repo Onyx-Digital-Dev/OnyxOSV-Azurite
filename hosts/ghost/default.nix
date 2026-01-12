@@ -133,12 +133,10 @@
   i18n.defaultLocale = "en_US.UTF-8";
 
   # ═══════════════════════════════════════════════════════════════════
-  # HOST-SPECIFIC: Legacy GPU compatibility
+  # HOST-SPECIFIC PACKAGES
   # ═══════════════════════════════════════════════════════════════════
-  # Intel HD 3000 only supports OpenGL 3.1 (Ghostty needs 3.3)
-  # Use foot terminal instead
+  # HD 3000 = OpenGL 3.1 (Ghostty needs 3.3)
   environment.systemPackages = with pkgs; [
-    foot        # Wayland-native terminal (works with OpenGL 3.1)
-    alacritty   # Alternative terminal
+    alacritty
   ];
 }
