@@ -81,11 +81,10 @@
         };
 
         # ThinkPad X220 - Vintage ultraportable (Kodiak)
-        # DISABLED: Needs hardware-configuration.nix before enabling
-        # ghost = mkHost {
-        #   hostName = "ghost";
-        #   system = "x86_64-linux";
-        # };
+        ghost = mkHost {
+          hostName = "ghost";
+          system = "x86_64-linux";
+        };
 
         # Dell R740XD Server Workstation - Dual Xeon, RTX 5000
         # DISABLED: Needs hardware-configuration.nix before enabling
