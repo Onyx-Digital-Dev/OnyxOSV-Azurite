@@ -26,7 +26,7 @@
 #   - No tty2 double-session issues
 #
 # ═══════════════════════════════════════════════════════════════════════════════
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
 let
   cfg = config.osv.environment;
@@ -49,9 +49,8 @@ in
           restartIfChanged = true;
         };
 
-        # DMS upstream bug: dgop package referenced but not provided.
-        # Disable until DMS ships the dgop package.
-        enableSystemMonitoring = false;
+        # dgop: system monitoring backend (separate flake input)
+        dgop.package = inputs.dgop.packages.${pkgs.system}.default;
       };
     }
 
