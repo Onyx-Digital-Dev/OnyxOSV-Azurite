@@ -40,7 +40,7 @@ in
     # DankMaterialShell - Shell layer (runs WITHIN Niri)
     # ═══════════════════════════════════════════════════════════════════
     {
-      programs.dankMaterialShell = {
+      programs.dank-material-shell = {
         enable = true;
         systemd = {
           # Activate via systemd user target (graphical-session.target)
@@ -48,6 +48,10 @@ in
           # Restart on config changes for live updates
           restartIfChanged = true;
         };
+
+        # DMS upstream bug: dgop package referenced but not provided.
+        # Disable until DMS ships the dgop package.
+        enableSystemMonitoring = false;
       };
     }
 
@@ -55,7 +59,7 @@ in
     # DankGreeter - Display manager (launches Niri session)
     # ═══════════════════════════════════════════════════════════════════
     (lib.mkIf greeterCfg.enable {
-      programs.dankMaterialShell.greeter = {
+      programs.dank-material-shell.greeter = {
         enable = true;
 
         # Compositor for greeter itself (NOT the user session)

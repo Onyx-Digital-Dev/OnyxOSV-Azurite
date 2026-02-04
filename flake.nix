@@ -38,9 +38,6 @@
         # DankMaterialShell modules
         dms.nixosModules.dank-material-shell
         dms.nixosModules.greeter
-
-        # DMS package overlay (provides dgop, etc. to pkgs)
-        { nixpkgs.overlays = [ dms.overlays.default ]; }
       ];
 
       # Build a host configuration
