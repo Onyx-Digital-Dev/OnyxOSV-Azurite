@@ -1,12 +1,12 @@
 # Saipan Host Configuration
 #
-# New host - hardware TBD.
-# All SIPs enabled for full capability.
+# Lenovo ThinkCentre M710q - Intel i5-6500T, HD 530, 16GB RAM
+# Compact desktop, all SIPs enabled for full capability.
 { config, lib, pkgs, ... }:
 
 {
   imports = [
-    # ./hardware-configuration.nix  # Uncomment after generating
+    ./hardware-configuration.nix
     ./facts.nix
   ];
 
@@ -67,7 +67,7 @@
   # HARDWARE - GPU
   # ═══════════════════════════════════════════════════════════════════
   osv.hardware.gpu = {
-    stack = "intel";  # CHANGE THIS: "intel" | "amd" | "nvidia" | "nvidia-prime"
+    stack = "intel";  # Intel HD Graphics 530
   };
 
   # ═══════════════════════════════════════════════════════════════════
