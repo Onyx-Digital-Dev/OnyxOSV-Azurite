@@ -92,6 +92,13 @@
         #   hostName = "belial";
         #   system = "x86_64-linux";
         # };
+
+        # Saipan - Hardware TBD
+        # DISABLED: Needs hardware-configuration.nix before enabling
+        # saipan = mkHost {
+        #   hostName = "saipan";
+        #   system = "x86_64-linux";
+        # };
       };
 
       # Expose OSV library for external use
